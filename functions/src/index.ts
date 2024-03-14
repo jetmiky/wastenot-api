@@ -1,15 +1,15 @@
-import { onRequest } from "firebase-functions/v2/https";
+import functions = require("firebase-functions");
+import admin = require("firebase-admin");
 
 import Koa = require("koa");
-import Router = require("@koa/router");
+import cors = require("@koa/cors");
+import respond = require("koa-respond");
+
+admin.initializeApp(functions.config().firebase);
 
 const app = new Koa();
-const router = new Router();
 
-router.get("/ping", (ctx) => {
-  ctx.body = "Hello world!";
-});
+app.use(cors());
+app.use(respond());
 
-app.use(router.routes()).use(router.allowedMethods());
-
-module.exports.api = onRequest(app.callback());
+module.exports.api = functions.https.onRequest(app.callback());
