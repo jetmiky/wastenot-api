@@ -15,10 +15,16 @@
   },
   "main": "lib/index.js",
   "dependencies": {
+    "@koa/bodyparser": "^5.0.0",
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^12.0.1",
     "firebase-admin": "^11.8.0",
-    "firebase-functions": "^4.3.1"
+    "firebase-functions": "^4.3.1",
+    "koa": "^2.15.0",
+    "koa-response2": "^1.0.4"
   },
   "devDependencies": {
+    "@types/koa__router": "^12.0.4",
     "@typescript-eslint/eslint-plugin": "^5.12.0",
     "@typescript-eslint/parser": "^5.12.0",
     "eslint": "^8.9.0",
