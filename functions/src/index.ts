@@ -7,9 +7,9 @@ import respond = require("koa-respond");
 import { bodyParser } from "@koa/bodyparser";
 import Router = require("@koa/router");
 
-import auth from "./routes/auth";
-
 admin.initializeApp(functions.config().firebase);
+
+import auth from "./routes/auth";
 
 const app = new Koa();
 const router = new Router();
