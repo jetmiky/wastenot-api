@@ -2,7 +2,6 @@ import admin = require("firebase-admin");
 import Router = require("@koa/router");
 import Joi = require("joi");
 
-import { getAsyncErrorMessage } from "../utils/errors";
 import verifyToken from "../middlewares/tokens";
 
 const router = new Router();
@@ -18,32 +17,22 @@ router.post("/register", async (ctx) => {
       .required(),
   }).with("password", "confirm_password");
 
-  try {
-    const { name, email, password, phoneNumber } = await schema.validateAsync(
-      ctx.req.body
-    );
+  const { name, email, password, phoneNumber } = await schema.validateAsync(
+    ctx.req.body
+  );
 
-    const user = await admin.auth().createUser({
-      displayName: name,
-      email,
-      password,
-      phoneNumber,
-      emailVerified: false,
-      disabled: false,
-    });
+  const user = await admin.auth().createUser({
+    displayName: name,
+    email,
+    password,
+    phoneNumber,
+    emailVerified: false,
+    disabled: false,
+  });
 
-    await admin.auth().setCustomUserClaims(user.uid, { role: "user" });
+  await admin.auth().setCustomUserClaims(user.uid, { role: "user" });
 
-    return ctx.created({ uid: user.uid, email: user.email });
-  } catch (error) {
-    const message = getAsyncErrorMessage(error);
-
-    if (error instanceof Joi.ValidationError) {
-      return ctx.badRequest(message);
-    }
-
-    return ctx.internalServerError(message);
-  }
+  return ctx.created({ uid: user.uid, email: user.email });
 });
 
 router.put("/", verifyToken("user"), async (ctx) => {
@@ -57,28 +46,18 @@ router.put("/", verifyToken("user"), async (ctx) => {
       .required(),
   }).with("password", "confirm_password");
 
-  try {
-    const { name, email, password, phoneNumber } = await schema.validateAsync(
-      ctx.req.body
-    );
+  const { name, email, password, phoneNumber } = await schema.validateAsync(
+    ctx.req.body
+  );
 
-    await admin.auth().updateUser(ctx.state.uid, {
-      displayName: name,
-      email,
-      password,
-      phoneNumber,
-    });
+  await admin.auth().updateUser(ctx.state.uid, {
+    displayName: name,
+    email,
+    password,
+    phoneNumber,
+  });
 
-    return ctx.ok({ uid: ctx.state.uid, email });
-  } catch (error) {
-    const message = getAsyncErrorMessage(error);
-
-    if (error instanceof Joi.ValidationError) {
-      return ctx.badRequest(message);
-    }
-
-    return ctx.internalServerError(message);
-  }
+  return ctx.ok({ uid: ctx.state.uid, email });
 });
 
 export default router;
