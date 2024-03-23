@@ -1,6 +1,7 @@
-import admin = require("firebase-admin");
+import * as admin from "firebase-admin";
 import { Next, Context, Middleware } from "koa";
 import UserRole from "../types/UserRole";
+import { ForbiddenError, UnauthorizedError } from "../types/Error";
 
 /**
  * Middleware to verify access token and add user object in context.
@@ -10,23 +11,19 @@ import UserRole from "../types/UserRole";
  */
 export default function verifyToken(allowedRole: UserRole): Middleware {
   return async (ctx: Context, next: Next) => {
-    try {
-      const authorization = ctx.request.headers.authorization;
-      if (authorization) {
-        const [, token] = authorization.split("Bearer ");
-        const { uid, role } = await admin.auth().verifyIdToken(token);
+    const authorization = ctx.request.headers.authorization;
+    if (!authorization) throw new UnauthorizedError();
 
-        ctx.state.uid = uid;
-        ctx.state.role = role;
+    const [, token] = authorization.split("Bearer ");
+    const user = await admin.auth().verifyIdToken(token);
+    if (!user) throw new UnauthorizedError();
 
-        if (role === allowedRole) {
-          return await next();
-        }
-      }
+    const { uid, role } = user;
+    ctx.state.uid = uid;
+    ctx.state.role = role;
 
-      throw new Error();
-    } catch (error) {
-      return ctx.unauthorized();
-    }
+    if (role !== allowedRole) throw new ForbiddenError();
+
+    return await next();
   };
 }
