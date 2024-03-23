@@ -25,7 +25,9 @@ router.post("/register", async (ctx) => {
       disabled: false,
     });
 
-    return ctx.ok(user.email);
+    await admin.auth().setCustomUserClaims(user.uid, { role: "user" });
+
+    return ctx.ok({ uid: user.uid, email: user.email });
   } catch (error) {
     const message = getAsyncErrorMessage(error);
 
