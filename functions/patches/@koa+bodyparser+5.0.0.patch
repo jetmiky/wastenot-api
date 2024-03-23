@@ -1,0 +1,20 @@
+diff --git a/node_modules/@koa/bodyparser/dist/body-parser.d.ts b/node_modules/@koa/bodyparser/dist/body-parser.d.ts
+index b4037ea..1de338a 100644
+--- a/node_modules/@koa/bodyparser/dist/body-parser.d.ts
++++ b/node_modules/@koa/bodyparser/dist/body-parser.d.ts
+@@ -5,13 +5,13 @@ import 'co-body';
+ declare module 'koa' {
+     interface Request {
+         body?: any;
+-        rawBody: string;
++        rawBody: any;
+     }
+ }
+ declare module 'http' {
+     interface IncomingMessage {
+         body?: any;
+-        rawBody: string;
++        rawBody: any;
+     }
+ }
+ declare function bodyParserWrapper(opts?: BodyParserOptions): (ctx: Koa.Context, next: Koa.Next) => Promise<any>;
