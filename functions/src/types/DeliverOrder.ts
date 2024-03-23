@@ -1,8 +1,9 @@
 import { Timestamp } from "firebase-admin/firestore";
+import { PhoneNumberID } from "./Strings";
 
 interface Sender {
   name: string;
-  phone: string;
+  phone: PhoneNumberID;
 }
 
 interface Waste {
@@ -11,6 +12,8 @@ interface Waste {
   wastePoint: number;
 }
 
+type Status = "Belum diproses" | "Menunggu penimbangan" | "Selesai";
+
 interface DeliverOrder {
   userId: string;
   bankId: string;
@@ -18,7 +21,7 @@ interface DeliverOrder {
   sendSchedule: Timestamp;
   wasteImageUrl: string;
   wastes: Waste[];
-  status: string;
+  status: Status;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

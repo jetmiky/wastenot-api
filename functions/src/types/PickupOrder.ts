@@ -1,8 +1,9 @@
 import { GeoPoint, Timestamp } from "firebase-admin/firestore";
+import { PhoneNumberID } from "./Strings";
 
 interface Requester {
   name: string;
-  phone: string;
+  phone: PhoneNumberID;
   address: string;
   pickupSchedule: Timestamp;
   geoPoint: GeoPoint;
@@ -14,6 +15,12 @@ interface Waste {
   wastePoint: number;
 }
 
+type Status =
+  | "Belum diproses"
+  | "Proses diambil"
+  | "Menunggu penimbangan"
+  | "Selesai";
+
 interface PickupOrder {
   userId: string;
   bankId: string;
@@ -21,7 +28,7 @@ interface PickupOrder {
   realizedPickupTime: Timestamp;
   wasteImageUrl: string;
   wastes: Waste[];
-  status: string;
+  status: Status;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
