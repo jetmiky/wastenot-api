@@ -15,7 +15,7 @@ interface Waste {
   wastePoint: number;
 }
 
-type Status =
+export type PickupStatus =
   | "Belum diproses"
   | "Proses diambil"
   | "Menunggu penimbangan"
@@ -28,7 +28,7 @@ interface PickupOrder {
   realizedPickupTime: Timestamp;
   wasteImageUrl: string;
   wastes: Waste[];
-  status: Status;
+  status: PickupStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

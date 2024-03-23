@@ -12,7 +12,10 @@ interface Waste {
   wastePoint: number;
 }
 
-type Status = "Belum diproses" | "Menunggu penimbangan" | "Selesai";
+export type DeliverStatus =
+  | "Belum diproses"
+  | "Menunggu penimbangan"
+  | "Selesai";
 
 interface DeliverOrder {
   userId: string;
@@ -21,7 +24,7 @@ interface DeliverOrder {
   sendSchedule: Timestamp;
   wasteImageUrl: string;
   wastes: Waste[];
-  status: Status;
+  status: DeliverStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }

@@ -11,11 +11,17 @@ import Router = require("@koa/router");
 admin.initializeApp(functions.config().firebase);
 
 import auth from "./routes/auth";
+import pickup from "./routes/pickups";
+import deliver from "./routes/delivers";
+import products from "./routes/products";
 
 const app = new Koa();
 const router = new Router();
 
 router.use("/auth", auth.routes());
+router.use("/pickups", pickup.routes());
+router.use("/delivers", deliver.routes());
+router.use("/products", products.routes());
 
 app.use(cors());
 app.use(respond());
