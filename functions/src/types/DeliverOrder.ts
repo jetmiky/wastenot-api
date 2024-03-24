@@ -6,7 +6,7 @@ interface Sender {
   phone: PhoneNumberID;
 }
 
-interface Waste {
+export interface Waste {
   wasteId: string;
   wasteWeight: number;
   wastePoint: number;
@@ -18,6 +18,7 @@ export type DeliverStatus =
   | "Selesai";
 
 interface DeliverOrder {
+  id?: string;
   userId: string;
   bankId: string;
   sender: Sender;
