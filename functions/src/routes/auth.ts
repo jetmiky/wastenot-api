@@ -2,10 +2,27 @@ import admin = require("firebase-admin");
 import Router = require("@koa/router");
 import Joi = require("joi");
 
+import db from "../utils/db";
 import verifyToken from "../middlewares/tokens";
 import { phoneNumberPattern } from "../utils/patterns";
 
+import User from "../types/User";
+import Level from "../types/Level";
+
 const router = new Router();
+
+router.get("/", verifyToken("user"), async (ctx) => {
+  const uid = ctx.state.uid;
+  const { displayName, email, phoneNumber } = await admin.auth().getUser(uid);
+
+  const userDocument = await db.users.doc(uid).get();
+  const { levelId, ...user } = userDocument.data() as User;
+
+  const levelDocument = await db.levels.doc(levelId).get();
+  const level = levelDocument.data() as Level;
+
+  ctx.ok({ name: displayName, email, phoneNumber, level, ...user });
+});
 
 router.post("/register", async (ctx) => {
   const schema = Joi.object({
