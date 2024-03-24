@@ -8,6 +8,7 @@ interface Schedule {
 }
 
 interface Bank {
+  id?: string;
   name: string;
   address: string;
   geoPoint: GeoPoint;
