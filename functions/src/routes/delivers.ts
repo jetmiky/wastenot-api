@@ -1,7 +1,9 @@
 import Router = require("@koa/router");
+import Joi = require("joi");
 
 import verifyToken from "../middlewares/tokens";
 import db from "../utils/db";
+import { FieldValue } from "firebase-admin/firestore";
 import { ForbiddenError, NotFoundError } from "../types/Error";
 import DeliverOrder, { DeliverStatus } from "../types/DeliverOrder";
 
@@ -36,6 +38,36 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
 
   if (order?.userId !== ctx.state.uid) throw new ForbiddenError();
   ctx.ok(order);
+});
+
+router.post("/", verifyToken("user"), async (ctx) => {
+  const schema = Joi.object({
+    bankId: Joi.string().required(),
+    senderName: Joi.string().min(3).max(100).required(),
+    senderPhone: Joi.string()
+      .pattern(/^\\+62\\d{10,12}$/)
+      .required(),
+    sendSchedule: Joi.string().isoDate(),
+  });
+
+  const body = await schema.validateAsync(ctx.req.body);
+
+  const { id } = await db.deliverOrders.add({
+    userId: ctx.state.uid,
+    bankId: body.bankId,
+    sender: {
+      name: body.senderName,
+      phone: body.senderPhone,
+    },
+    sendSchedule: body.sendSchedule,
+    wasteImageUrl: "",
+    wastes: [],
+    status: "Belum diproses",
+    createdAt: FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+
+  ctx.ok({ id });
 });
 
 export default router;
