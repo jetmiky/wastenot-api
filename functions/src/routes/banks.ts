@@ -57,15 +57,19 @@ router.post("/", verifyToken("admin"), async (ctx) => {
         scheduleTimeClose: Joi.date().format("HH:mm").raw(),
       })
       .required(),
+    geoPoint: Joi.object({
+      latitude: Joi.number().min(-90).max(90).required(),
+      longitude: Joi.number().min(-180).max(180).required(),
+    }),
   });
 
   const body = await schema.validateAsync(ctx.request.body);
-  const { name, address, closedDates, openSchedules } = body;
+  const { name, address, closedDates, openSchedules, geoPoint } = body;
 
   const bank: Bank = {
     name,
     address,
-    geoPoint: new GeoPoint(1, 2),
+    geoPoint: new GeoPoint(geoPoint.latitude, geoPoint.longitude),
     closedDates,
     openSchedules,
   };
@@ -86,10 +90,14 @@ router.put("/:id", verifyToken("admin"), async (ctx) => {
       scheduleTimeOpen: Joi.date().format("HH:mm").raw(),
       scheduleTimeClose: Joi.date().format("HH:mm").raw(),
     }),
+    geoPoint: Joi.object({
+      latitude: Joi.number().min(-90).max(90),
+      longitude: Joi.number().min(-180).max(180),
+    }).and("latitude", "longitude"),
   });
 
   const body = await schema.validateAsync(ctx.request.body);
-  const { name, address, closedDates, openSchedules } = body;
+  const { name, address, closedDates, openSchedules, geoPoint } = body;
 
   const documentRef = db.banks.doc(bankId);
   const document = await documentRef.get();
@@ -103,6 +111,9 @@ router.put("/:id", verifyToken("admin"), async (ctx) => {
   if (address) updatedBank.address = address;
   if (closedDates) updatedBank.closedDates = closedDates;
   if (openSchedules) updatedBank.openSchedules = openSchedules;
+  if (geoPoint) {
+    updatedBank.geoPoint = new GeoPoint(geoPoint.latitude, geoPoint.longitude);
+  }
 
   await documentRef.update(updatedBank);
 

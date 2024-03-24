@@ -54,6 +54,10 @@ router.post("/", verifyToken("user"), async (ctx) => {
     requesterPhone: Joi.string().pattern(phoneNumberPattern).required(),
     requesterAddress: Joi.string().max(254).required(),
     pickupSchedule: Joi.date().iso().required(),
+    geoPoint: Joi.object({
+      latitude: Joi.number().min(-90).max(90).required(),
+      longitude: Joi.number().min(-180).max(180).required(),
+    }),
   });
 
   const body = await schema.validateAsync(ctx.req.body);
@@ -63,6 +67,7 @@ router.post("/", verifyToken("user"), async (ctx) => {
     requesterPhone,
     requesterAddress,
     pickupSchedule,
+    geoPoint,
   } = body;
 
   const { id } = await db.pickupOrders.add({
@@ -73,7 +78,7 @@ router.post("/", verifyToken("user"), async (ctx) => {
       phone: requesterPhone,
       address: requesterAddress,
       pickupSchedule: timestampFromISODateString(pickupSchedule),
-      geoPoint: new GeoPoint(1, 2),
+      geoPoint: new GeoPoint(geoPoint.latitude, geoPoint.longitude),
     },
     wasteImageUrl: "",
     wastes: [],
@@ -110,6 +115,10 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
       requesterPhone: Joi.string().pattern(phoneNumberPattern),
       requesterAddress: Joi.string().max(254),
       pickupSchedule: Joi.date().iso(),
+      geoPoint: Joi.object({
+        latitude: Joi.number().min(-90).max(90),
+        longitude: Joi.number().min(-180).max(180),
+      }).and("latitude", "longitude"),
     });
 
     const body = await schema.validateAsync(ctx.request.body);
@@ -119,6 +128,7 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
       requesterPhone,
       requesterAddress,
       pickupSchedule,
+      geoPoint,
     } = body;
 
     if (bankId) updatedOrder.bankId = bankId;
@@ -128,6 +138,12 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
     if (pickupSchedule) {
       updatedOrder.requester.pickupSchedule =
         timestampFromISODateString(pickupSchedule);
+    }
+    if (geoPoint) {
+      updatedOrder.requester.geoPoint = new GeoPoint(
+        geoPoint.latitude,
+        geoPoint.longitude
+      );
     }
 
     await db.pickupOrders.doc(orderId).update({
