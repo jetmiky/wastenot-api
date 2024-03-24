@@ -39,9 +39,10 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   const document = await db.deliverOrders.doc(id).get();
 
   if (!document.exists) throw new NotFoundError();
-  const order = document.data();
 
+  const order = document.data();
   if (order?.userId !== ctx.state.uid) throw new ForbiddenError();
+
   ctx.ok(order);
 });
 
@@ -111,9 +112,7 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
       ...updatedOrder,
       updatedAt: FieldValue.serverTimestamp(),
     });
-  }
-
-  if (ctx.state.role === "bank") {
+  } else if (ctx.state.role === "bank") {
     if (existingOrder.bankId !== ctx.state.uid) throw new ForbiddenError();
 
     schema = Joi.object({
@@ -162,7 +161,7 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
     }
   }
 
-  return ctx.ok(updatedOrder);
+  ctx.ok(updatedOrder);
 });
 
 router.delete("/:id", verifyToken("user"), async (ctx) => {

@@ -9,7 +9,7 @@ interface Requester {
   geoPoint: GeoPoint;
 }
 
-interface Waste {
+export interface Waste {
   wasteId: string;
   wasteWeight: number;
   wastePoint: number;
@@ -22,10 +22,11 @@ export type PickupStatus =
   | "Selesai";
 
 interface PickupOrder {
+  id?: string;
   userId: string;
   bankId: string;
   requester: Requester;
-  realizedPickupTime: Timestamp;
+  realizedPickupTime: Timestamp | null;
   wasteImageUrl: string;
   wastes: Waste[];
   status: PickupStatus;
