@@ -14,15 +14,22 @@ router.get("/", verifyToken("user"), async (ctx) => {
   const search = ctx.query.search;
 
   const products: Product[] = [];
-  const documents = await db.products
-    .orderBy("name")
-    .startAt(search)
-    .endAt(search + "~")
+  const documentsRef = search ?
+    db.products
+      .orderBy("name")
+      .startAt(search)
+      .endAt(search + "~") :
+    db.products;
+
+  const documents = await documentsRef
     .limit(6)
-    .offset(paginate * 6)
+    .offset((paginate - 1) * 6)
     .get();
 
-  documents.forEach((document) => products.push(document.data()));
+  documents.forEach((document) => {
+    products.push({ ...document.data(), id: document.id });
+  });
+
   ctx.ok(products);
 });
 
@@ -40,7 +47,7 @@ router.post("/", verifyToken("bank"), async (ctx) => {
   const schema = Joi.object({
     name: Joi.string().min(3).max(100).required(),
     description: Joi.string().min(3).max(254).required(),
-    price: Joi.number().min(0).required(),
+    price: Joi.number().min(1).required(),
     marketplaces: Joi.array()
       .min(1)
       .items({
@@ -69,30 +76,34 @@ router.put("/:id", verifyToken("bank"), async (ctx) => {
   const productId = ctx.params.id;
 
   const schema = Joi.object({
-    name: Joi.string().min(3).max(100).required(),
-    description: Joi.string().min(3).max(254).required(),
-    price: Joi.number().min(0).required(),
-    marketplaces: Joi.array()
-      .min(1)
-      .items({
-        name: Joi.string().required(),
-        url: Joi.string().required(),
-      })
-      .required(),
+    name: Joi.string().min(3).max(100),
+    description: Joi.string().min(3).max(254),
+    price: Joi.number().min(1),
+    marketplaces: Joi.array().min(1).items({
+      name: Joi.string().required(),
+      url: Joi.string().required(),
+    }),
   });
 
   const body = await schema.validateAsync(ctx.request.body);
   const { name, description, price, marketplaces } = body;
 
-  const document = await db.products.doc(productId).get();
+  const documentRef = db.products.doc(productId);
+  const document = await documentRef.get();
 
   if (!document.exists) throw new NotFoundError();
 
-  const product = document.data() as Product;
-  if (product.ownerId !== ctx.state.uid) throw new ForbiddenError();
+  const existingProduct = document.data() as Product;
+  if (existingProduct.ownerId !== ctx.state.uid) throw new ForbiddenError();
 
-  const updatedProduct = { ...product, name, description, price, marketplaces };
-  await db.products.doc(productId).set(updatedProduct);
+  const updatedProduct = { ...existingProduct };
+
+  if (name) updatedProduct.name = name;
+  if (description) updatedProduct.description = description;
+  if (price) updatedProduct.price = price;
+  if (marketplaces) updatedProduct.marketplaces = marketplaces;
+
+  await db.products.doc(productId).update(updatedProduct);
 
   ctx.ok(updatedProduct);
 });
@@ -100,11 +111,13 @@ router.put("/:id", verifyToken("bank"), async (ctx) => {
 router.delete("/:id", verifyToken("bank"), async (ctx) => {
   const productId = ctx.params.id;
 
-  const document = await db.products.doc(productId).get();
-  if (!document.exists) throw new NotFoundError();
+  const documentRef = db.products.doc(productId);
+  const document = await documentRef.get();
 
+  if (!document.exists) throw new NotFoundError();
   if (document.data()?.ownerId !== ctx.state.uid) throw new ForbiddenError();
-  await db.products.doc(productId).delete();
+
+  await documentRef.delete();
 
   ctx.noContent();
 });
