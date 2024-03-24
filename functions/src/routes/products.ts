@@ -52,7 +52,7 @@ router.post("/", verifyToken(["bank", "seller"]), async (ctx) => {
       .min(1)
       .items({
         name: Joi.string().required(),
-        url: Joi.string().required(),
+        url: Joi.string().uri().required(),
       })
       .required(),
   });
@@ -81,7 +81,7 @@ router.put("/:id", verifyToken(["bank", "seller"]), async (ctx) => {
     price: Joi.number().min(1),
     marketplaces: Joi.array().min(1).items({
       name: Joi.string().required(),
-      url: Joi.string().required(),
+      url: Joi.string().uri().required(),
     }),
   });
 
