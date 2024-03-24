@@ -1,4 +1,4 @@
-import { GeoPoint, Timestamp } from "firebase-admin/firestore";
+import { GeoPoint } from "firebase-admin/firestore";
 import { DayOfWeek, Time } from "./Strings";
 
 interface Schedule {
@@ -8,9 +8,10 @@ interface Schedule {
 }
 
 interface Bank {
+  name: string;
   address: string;
   geoPoint: GeoPoint;
-  closedSchedules: Timestamp[];
+  closedDates: string[];
   openSchedules: Schedule[];
 }
 

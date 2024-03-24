@@ -35,6 +35,7 @@ const getCollection = <T>(path: string): CollectionReference<T> =>
   getFirestore().collection(path).withConverter(converter<T>());
 
 const db = {
+  firestore: getFirestore(),
   users: getCollection<User>("users"),
   banks: getCollection<Bank>("banks"),
   levels: getCollection<Level>("levels"),
