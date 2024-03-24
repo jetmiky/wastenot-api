@@ -93,8 +93,9 @@ async function initializeDevelopment(): Promise<void> {
       const batch = db.firestore.batch();
 
       const banks = await db.banks.get();
-      const products = await db.products.get();
       const users = await db.users.get();
+      const sellers = await db.sellers.get();
+      const products = await db.products.get();
 
       let bankUid = "";
 
@@ -209,6 +210,34 @@ async function initializeDevelopment(): Promise<void> {
         });
 
         initialized.push("Development.Firestore.Users");
+      }
+
+      if (sellers.empty) {
+        const DEFAULT_SELLER_NAME = "Default Seller";
+        const DEFAULT_SELLER_EMAIL = "seller@wastenot.id";
+        const DEFAULT_SELLER_PASSWORD = "password";
+        const DEFAULT_SELLER_PHONE_NUMBER = "+6212345678902";
+        const DEFAULT_SELLER_ADDRESS = "Jakarta";
+
+        const { uid } = await admin.auth().createUser({
+          displayName: DEFAULT_SELLER_NAME,
+          email: DEFAULT_SELLER_EMAIL,
+          password: DEFAULT_SELLER_PASSWORD,
+          phoneNumber: DEFAULT_SELLER_PHONE_NUMBER,
+          emailVerified: false,
+          disabled: false,
+        });
+
+        admin.auth().setCustomUserClaims(uid, { role: "seller" });
+
+        initialized.push("Development.Auth.Sellers");
+
+        await db.sellers.doc(uid).set({
+          name: DEFAULT_SELLER_NAME,
+          address: DEFAULT_SELLER_ADDRESS,
+        });
+
+        initialized.push("Development.Firestore.Sellers");
       }
 
       batch.commit();

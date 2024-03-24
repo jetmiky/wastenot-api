@@ -43,7 +43,7 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   ctx.ok(product);
 });
 
-router.post("/", verifyToken("bank"), async (ctx) => {
+router.post("/", verifyToken(["bank", "seller"]), async (ctx) => {
   const schema = Joi.object({
     name: Joi.string().min(3).max(100).required(),
     description: Joi.string().min(3).max(254).required(),
@@ -72,7 +72,7 @@ router.post("/", verifyToken("bank"), async (ctx) => {
   ctx.created({ id, ...product });
 });
 
-router.put("/:id", verifyToken("bank"), async (ctx) => {
+router.put("/:id", verifyToken(["bank", "seller"]), async (ctx) => {
   const productId = ctx.params.id;
 
   const schema = Joi.object({
@@ -108,7 +108,7 @@ router.put("/:id", verifyToken("bank"), async (ctx) => {
   ctx.ok(updatedProduct);
 });
 
-router.delete("/:id", verifyToken("bank"), async (ctx) => {
+router.delete("/:id", verifyToken(["bank", "seller"]), async (ctx) => {
   const productId = ctx.params.id;
 
   const documentRef = db.products.doc(productId);

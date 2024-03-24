@@ -10,6 +10,7 @@ import Level from "../types/Level";
 import Waste from "../types/Waste";
 import User from "../types/User";
 import Bank from "../types/Bank";
+import Seller from "../types/Seller";
 import Product from "../types/Product";
 import DeliverOrder from "../types/DeliverOrder";
 import PickupOrder from "../types/PickupOrder";
@@ -38,6 +39,7 @@ const db = {
   firestore: getFirestore(),
   users: getCollection<User>("users"),
   banks: getCollection<Bank>("banks"),
+  sellers: getCollection<Seller>("seller"),
   levels: getCollection<Level>("levels"),
   products: getCollection<Product>("products"),
   wastes: getCollection<Waste>("wastes"),
