@@ -37,7 +37,10 @@ export default function handleErrors(): Middleware {
     } catch (error) {
       const response = constructErrorResponse(error);
 
-      if (error instanceof Errors.ValidationError) {
+      if (
+        error instanceof Errors.ValidationError ||
+        error instanceof Errors.BadRequestError
+      ) {
         ctx.badRequest(response);
       } else if (error instanceof Errors.UnauthorizedError) {
         ctx.unauthorized(response);

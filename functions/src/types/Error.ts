@@ -28,6 +28,10 @@ export class ErrorResponse extends Error {
   }
 }
 
+export class BadRequestError extends ErrorResponse {
+  public message = "Bad Request!";
+}
+
 export class UnauthorizedError extends ErrorResponse {
   public message = "Unauthorized!";
 }
