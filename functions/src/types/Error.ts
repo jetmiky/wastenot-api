@@ -28,6 +28,14 @@ export class ErrorResponse extends Error {
   }
 }
 
-export class UnauthorizedError extends ErrorResponse {}
-export class ForbiddenError extends ErrorResponse {}
-export class NotFoundError extends ErrorResponse {}
+export class UnauthorizedError extends ErrorResponse {
+  public message = "Unauthorized!";
+}
+
+export class ForbiddenError extends ErrorResponse {
+  public message = "Forbidden!";
+}
+
+export class NotFoundError extends ErrorResponse {
+  public message = "Not Found!";
+}

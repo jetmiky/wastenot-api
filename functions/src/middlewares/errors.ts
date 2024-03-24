@@ -17,7 +17,7 @@ function constructErrorResponse(error: unknown): Response {
 
   if (error instanceof Errors.ErrorResponse) {
     response.message = error.message;
-    response.code = error.code;
+    if (error.code) response.code = error.code;
   } else if (error instanceof Error) {
     response.message = error.message;
   }
