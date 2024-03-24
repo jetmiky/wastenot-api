@@ -7,10 +7,16 @@ import { FirebaseAuthError } from "firebase-admin/lib/utils/error";
 /**
  * Middleware to verify access token and add user object in context.
  *
- * @param {UserRole} allowedRole User role that can proceed the middleware.
+ * @param {UserRole | UserRole[]} allowedRoles
+ * User role that can proceed the middleware.
+ *
  * @return {Middleware}
  */
-export default function verifyToken(allowedRole: UserRole): Middleware {
+export default function verifyToken(
+  allowedRoles: UserRole | UserRole[]
+): Middleware {
+  if (typeof allowedRoles === "string") allowedRoles = [allowedRoles];
+
   return async (ctx: Context, next: Next) => {
     try {
       const authorization = ctx.request.headers.authorization;
@@ -24,7 +30,7 @@ export default function verifyToken(allowedRole: UserRole): Middleware {
       ctx.state.uid = uid;
       ctx.state.role = role;
 
-      if (role !== allowedRole) throw new ForbiddenError();
+      if (!allowedRoles.includes(role)) throw new ForbiddenError();
 
       return await next();
     } catch (error) {
