@@ -29,9 +29,9 @@ router.post("/register", async (ctx) => {
     name: Joi.string().min(3).max(100).required(),
     email: Joi.string().email().required(),
     password: Joi.string().pattern(/^[a-zA-Z0-9]{8,30}/, {}),
-    confirm_password: Joi.ref("password"),
+    confirmPassword: Joi.ref("password"),
     phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
-  }).with("password", "confirm_password");
+  }).with("password", "confirmPassword");
 
   const { name, email, password, phoneNumber } = await schema.validateAsync(
     ctx.req.body
@@ -56,9 +56,9 @@ router.put("/", verifyToken("user"), async (ctx) => {
     name: Joi.string().min(3).max(100).required(),
     email: Joi.string().email().required(),
     password: Joi.string().pattern(/^[a-zA-Z0-9]{8,30}/, {}),
-    confirm_password: Joi.ref("password"),
+    confirmPassword: Joi.ref("password"),
     phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
-  }).with("password", "confirm_password");
+  }).with("password", "confirmPassword");
 
   const { name, email, password, phoneNumber } = await schema.validateAsync(
     ctx.req.body
