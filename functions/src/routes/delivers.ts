@@ -7,6 +7,7 @@ import { FieldValue } from "firebase-admin/firestore";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "../types/Error";
 import DeliverOrder, { DeliverStatus, Waste } from "../types/DeliverOrder";
+import { timestampFromISODateString } from "../utils/formats";
 import { phoneNumberPattern } from "../utils/patterns";
 
 const router = new Router();
@@ -55,15 +56,16 @@ router.post("/", verifyToken("user"), async (ctx) => {
   });
 
   const body = await schema.validateAsync(ctx.req.body);
+  const { bankId, senderName, senderPhone, sendSchedule } = body;
 
   const { id } = await db.deliverOrders.add({
     userId: ctx.state.uid,
-    bankId: body.bankId,
+    bankId,
     sender: {
-      name: body.senderName,
-      phone: body.senderPhone,
+      name: senderName,
+      phone: senderPhone,
     },
-    sendSchedule: body.sendSchedule,
+    sendSchedule: timestampFromISODateString(sendSchedule),
     wasteImageUrl: "",
     wastes: [],
     status: "Belum diproses",
@@ -106,7 +108,9 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
     if (bankId) updatedOrder.bankId = bankId;
     if (senderName) updatedOrder.sender.name = senderName;
     if (senderPhone) updatedOrder.sender.phone = senderPhone;
-    if (sendSchedule) updatedOrder.sendSchedule = sendSchedule;
+    if (sendSchedule) {
+      updatedOrder.sendSchedule = timestampFromISODateString(sendSchedule);
+    }
 
     await db.deliverOrders.doc(orderId).update({
       ...updatedOrder,

@@ -7,6 +7,7 @@ import { FieldValue, GeoPoint } from "firebase-admin/firestore";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "../types/Error";
 import PickupOrder, { PickupStatus, Waste } from "../types/PickupOrder";
+import { timestampFromISODateString } from "../utils/formats";
 import { phoneNumberPattern } from "../utils/patterns";
 
 const router = new Router();
@@ -71,13 +72,12 @@ router.post("/", verifyToken("user"), async (ctx) => {
       name: requesterName,
       phone: requesterPhone,
       address: requesterAddress,
-      pickupSchedule: pickupSchedule,
+      pickupSchedule: timestampFromISODateString(pickupSchedule),
       geoPoint: new GeoPoint(1, 2),
     },
     wasteImageUrl: "",
     wastes: [],
     status: "Belum diproses",
-    realizedPickupTime: null,
     createdAt: FieldValue.serverTimestamp(),
     updatedAt: FieldValue.serverTimestamp(),
   });
@@ -85,7 +85,7 @@ router.post("/", verifyToken("user"), async (ctx) => {
   ctx.ok({ id });
 });
 
-router.post("/:id", verifyToken(["bank", "user"]), async (ctx) => {
+router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
   const orderId = ctx.params.id;
 
   const documentRef = db.pickupOrders.doc(orderId);
@@ -125,7 +125,10 @@ router.post("/:id", verifyToken(["bank", "user"]), async (ctx) => {
     if (requesterName) updatedOrder.requester.name = requesterName;
     if (requesterPhone) updatedOrder.requester.phone = requesterPhone;
     if (requesterAddress) updatedOrder.requester.address = requesterAddress;
-    if (pickupSchedule) updatedOrder.requester.pickupSchedule = pickupSchedule;
+    if (pickupSchedule) {
+      updatedOrder.requester.pickupSchedule =
+        timestampFromISODateString(pickupSchedule);
+    }
 
     await db.pickupOrders.doc(orderId).update({
       ...updatedOrder,
@@ -146,9 +149,16 @@ router.post("/:id", verifyToken(["bank", "user"]), async (ctx) => {
         }),
         otherwise: Joi.any(),
       }),
+      realizedPickupTime: Joi.when("status", {
+        is: Joi.string().equal("Selesai"),
+        then: Joi.date().iso().required(),
+        otherwise: Joi.any(),
+      }),
     });
 
-    const { status, wastes } = await schema.validateAsync(ctx.request.body);
+    const { status, wastes, realizedPickupTime } = await schema.validateAsync(
+      ctx.request.body
+    );
     updatedOrder.status = status;
 
     if (status === "Proses diambil" || status === "Menunggu penimbangan") {
@@ -168,6 +178,8 @@ router.post("/:id", verifyToken(["bank", "user"]), async (ctx) => {
       });
 
       updatedOrder.wastes = wastes;
+      updatedOrder.realizedPickupTime =
+        timestampFromISODateString(realizedPickupTime);
 
       await db.firestore.runTransaction(async () => {
         await db.users.doc(existingOrder.userId).update({
