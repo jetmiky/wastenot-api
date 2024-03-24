@@ -1,4 +1,5 @@
 import Router = require("@koa/router");
+import Joi = require("joi");
 
 import verifyToken from "../middlewares/tokens";
 import db from "../utils/db";
@@ -33,6 +34,35 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
 
   const product = document.data();
   ctx.ok(product);
+});
+
+router.post("/", verifyToken("bank"), async (ctx) => {
+  const schema = Joi.object({
+    name: Joi.string().min(3).max(100).required(),
+    description: Joi.string().min(3).max(254).required(),
+    price: Joi.number().min(0).required(),
+    marketplaces: Joi.array()
+      .min(1)
+      .items({
+        name: Joi.string().required(),
+        url: Joi.string().required(),
+      })
+      .required(),
+  });
+
+  const body = await schema.validateAsync(ctx.request.body);
+  const { name, description, price, marketplaces } = body;
+
+  const product: Product = {
+    name,
+    description,
+    price,
+    marketplaces,
+    ownerId: ctx.state.uid,
+  };
+
+  const { id } = await db.products.add(product);
+  ctx.created({ id, ...product });
 });
 
 export default router;
