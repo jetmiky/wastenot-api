@@ -1,10 +1,12 @@
 import Router = require("@koa/router");
-import Joi = require("joi");
+import JoiDateFactory from "@joi/date";
+import JoiCore = require("joi");
+
+const Joi = JoiCore.extend(JoiDateFactory) as typeof JoiCore;
 
 import { GeoPoint } from "firebase-admin/firestore";
 import verifyToken from "../middlewares/tokens";
 import db from "../utils/db";
-import { timePattern } from "../utils/patterns";
 
 import { NotFoundError } from "../types/Error";
 import Bank from "../types/Bank";
@@ -45,12 +47,14 @@ router.post("/", verifyToken("admin"), async (ctx) => {
   const schema = Joi.object({
     name: Joi.string().min(3).max(100).required(),
     address: Joi.string().min(3).max(254).required(),
-    closedDates: Joi.array().items(Joi.string().isoDate()).required(),
+    closedDates: Joi.array()
+      .items(Joi.date().format("YYYY-MM-DD").raw())
+      .required(),
     openSchedules: Joi.array()
       .items({
-        dayOfWeek: Joi.string().valid("0", "1", "2", "3", "4", "5", "6"),
-        scheduleTimeOpen: Joi.string().pattern(timePattern),
-        scheduleTimeClose: Joi.string().pattern(timePattern),
+        dayOfWeek: Joi.date().format("E").raw(),
+        scheduleTimeOpen: Joi.date().format("HH:mm").raw(),
+        scheduleTimeClose: Joi.date().format("HH:mm").raw(),
       })
       .required(),
   });
@@ -76,11 +80,11 @@ router.put("/:id", verifyToken("admin"), async (ctx) => {
   const schema = Joi.object({
     name: Joi.string().min(3).max(100),
     address: Joi.string().min(3).max(254),
-    closedDates: Joi.array().items(Joi.string().isoDate()),
+    closedDates: Joi.array().items(Joi.date().format("YYYY-MM-DD").raw()),
     openSchedules: Joi.array().items({
-      dayOfWeek: Joi.string().valid("0", "1", "2", "3", "4", "5", "6"),
-      scheduleTimeOpen: Joi.string().pattern(timePattern),
-      scheduleTimeClose: Joi.string().pattern(timePattern),
+      dayOfWeek: Joi.date().format("E").raw(),
+      scheduleTimeOpen: Joi.date().format("HH:mm").raw(),
+      scheduleTimeClose: Joi.date().format("HH:mm").raw(),
     }),
   });
 

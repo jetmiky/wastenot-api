@@ -52,7 +52,7 @@ router.post("/", verifyToken("user"), async (ctx) => {
     requesterName: Joi.string().min(3).max(100).required(),
     requesterPhone: Joi.string().pattern(phoneNumberPattern).required(),
     requesterAddress: Joi.string().max(254).required(),
-    pickupSchedule: Joi.string().isoDate().required(),
+    pickupSchedule: Joi.date().iso().required(),
   });
 
   const body = await schema.validateAsync(ctx.req.body);
@@ -109,7 +109,7 @@ router.post("/:id", verifyToken(["bank", "user"]), async (ctx) => {
       requesterName: Joi.string().min(3).max(100),
       requesterPhone: Joi.string().pattern(phoneNumberPattern),
       requesterAddress: Joi.string().max(254),
-      pickupSchedule: Joi.string().isoDate(),
+      pickupSchedule: Joi.date().iso(),
     });
 
     const body = await schema.validateAsync(ctx.request.body);
