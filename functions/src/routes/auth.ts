@@ -3,6 +3,7 @@ import Router = require("@koa/router");
 import Joi = require("joi");
 
 import verifyToken from "../middlewares/tokens";
+import { phoneNumberPattern } from "../utils/patterns";
 
 const router = new Router();
 
@@ -12,9 +13,7 @@ router.post("/register", async (ctx) => {
     email: Joi.string().email().required(),
     password: Joi.string().pattern(/^[a-zA-Z0-9]{8,30}/, {}),
     confirm_password: Joi.ref("password"),
-    phoneNumber: Joi.string()
-      .pattern(/^\\+62\\d{10,12}$/)
-      .required(),
+    phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
   }).with("password", "confirm_password");
 
   const { name, email, password, phoneNumber } = await schema.validateAsync(
@@ -41,9 +40,7 @@ router.put("/", verifyToken("user"), async (ctx) => {
     email: Joi.string().email().required(),
     password: Joi.string().pattern(/^[a-zA-Z0-9]{8,30}/, {}),
     confirm_password: Joi.ref("password"),
-    phoneNumber: Joi.string()
-      .pattern(/^\\+62\\d{10,12}$/)
-      .required(),
+    phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
   }).with("password", "confirm_password");
 
   const { name, email, password, phoneNumber } = await schema.validateAsync(
