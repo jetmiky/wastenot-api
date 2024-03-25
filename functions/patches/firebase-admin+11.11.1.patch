@@ -1,0 +1,15 @@
+diff --git a/node_modules/firebase-admin/package.json b/node_modules/firebase-admin/package.json
+index e59e233..3456783 100644
+--- a/node_modules/firebase-admin/package.json
++++ b/node_modules/firebase-admin/package.json
+@@ -164,6 +164,10 @@
+       "require": "./lib/instance-id/index.js",
+       "import": "./lib/esm/instance-id/index.js"
+     },
++    "./lib/utils/error" : {
++      "types": "./lib/utils/error.d.ts",
++      "require": "./lib/utils/error.js"
++    },
+     "./machine-learning": {
+       "types": "./lib/machine-learning/index.d.ts",
+       "require": "./lib/machine-learning/index.js",
