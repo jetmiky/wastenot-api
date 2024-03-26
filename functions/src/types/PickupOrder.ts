@@ -27,7 +27,7 @@ interface PickupOrder {
   bankId: string;
   requester: Requester;
   realizedPickupTime?: Timestamp;
-  wasteImageUrl: string;
+  wasteImagePath: string;
   wastes: Waste[];
   status: PickupStatus;
   createdAt: Timestamp;

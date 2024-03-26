@@ -3,6 +3,8 @@ import Joi = require("joi");
 
 import verifyToken from "../middlewares/tokens";
 import db from "../utils/db";
+import { upload } from "../utils/storage";
+import multipart from "../middlewares/multipart";
 import { FieldValue, GeoPoint } from "firebase-admin/firestore";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "../types/Error";
@@ -47,7 +49,7 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   ctx.ok(order);
 });
 
-router.post("/", verifyToken("user"), async (ctx) => {
+router.post("/", verifyToken("user"), multipart("wasteImage"), async (ctx) => {
   const schema = Joi.object({
     bankId: Joi.string().required(),
     requesterName: Joi.string().min(3).max(100).required(),
@@ -58,6 +60,7 @@ router.post("/", verifyToken("user"), async (ctx) => {
       latitude: Joi.number().min(-90).max(90).required(),
       longitude: Joi.number().min(-180).max(180).required(),
     }),
+    wasteImage: Joi.any(),
   });
 
   const body = await schema.validateAsync(ctx.req.body);
@@ -70,6 +73,9 @@ router.post("/", verifyToken("user"), async (ctx) => {
     geoPoint,
   } = body;
 
+  const { extension, mimeType, buffer } = ctx.request.files.wasteImage;
+  const path = await upload("pickups", "random", extension, mimeType, buffer);
+
   const { id } = await db.pickupOrders.add({
     userId: ctx.state.uid,
     bankId,
@@ -80,7 +86,7 @@ router.post("/", verifyToken("user"), async (ctx) => {
       pickupSchedule: timestampFromISODateString(pickupSchedule),
       geoPoint: new GeoPoint(geoPoint.latitude, geoPoint.longitude),
     },
-    wasteImageUrl: "",
+    wasteImagePath: path,
     wastes: [],
     status: "Belum diproses",
     createdAt: FieldValue.serverTimestamp(),

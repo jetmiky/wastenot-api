@@ -23,7 +23,7 @@ interface DeliverOrder {
   bankId: string;
   sender: Sender;
   sendSchedule: Timestamp;
-  wasteImageUrl: string;
+  wasteImagePath: string;
   wastes: Waste[];
   status: DeliverStatus;
   createdAt: Timestamp;
