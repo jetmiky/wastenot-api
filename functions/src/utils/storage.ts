@@ -23,4 +23,24 @@ export async function upload(
   return bucket.publicUrl();
 }
 
-export default { upload };
+/**
+ * Get public URL of file in Storage.
+ *
+ * @param { DirectoryPath } path         Path relative to root storage.
+ * @param { string } filename     Name of file, includes ext.
+ * @return { Promise<string> }    Returns public URL of file.
+ */
+export async function getSignedUrl(
+  path: DirectoryPath,
+  filename: string
+): Promise<string> {
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 7);
+
+  const bucket = getStorage().bucket().file(`${path}/${filename}`);
+  const response = await bucket.getSignedUrl({ action: "read", expires });
+
+  return response[0];
+}
+
+export default { upload, getSignedUrl };
