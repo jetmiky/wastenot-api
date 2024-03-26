@@ -2,7 +2,9 @@ import Router = require("@koa/router");
 import Joi = require("joi");
 
 import verifyToken from "../middlewares/tokens";
+import multipart from "../middlewares/multipart";
 import db from "../utils/db";
+import { upload } from "../utils/storage";
 import { ForbiddenError, NotFoundError } from "../types/Error";
 import Product from "../types/Product";
 
@@ -43,34 +45,57 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   ctx.ok(product);
 });
 
-router.post("/", verifyToken(["bank", "seller"]), async (ctx) => {
-  const schema = Joi.object({
-    name: Joi.string().min(3).max(100).required(),
-    description: Joi.string().min(3).max(254).required(),
-    price: Joi.number().min(1).required(),
-    marketplaces: Joi.array()
-      .min(1)
-      .items({
-        name: Joi.string().required(),
-        url: Joi.string().uri().required(),
-      })
-      .required(),
-  });
+router.post(
+  "/",
+  verifyToken(["bank", "seller"]),
+  multipart(["productImage1, productImage2"]),
+  async (ctx) => {
+    const schema = Joi.object({
+      name: Joi.string().min(3).max(100).required(),
+      description: Joi.string().min(3).max(254).required(),
+      price: Joi.number().min(1).required(),
+      marketplaces: Joi.array()
+        .min(1)
+        .items({
+          name: Joi.string().required(),
+          url: Joi.string().uri().required(),
+        })
+        .required(),
+    });
 
-  const body = await schema.validateAsync(ctx.request.body);
-  const { name, description, price, marketplaces } = body;
+    const { productImage1, productImage2 } = ctx.request.files;
+    const imagePaths: string[] = [];
 
-  const product: Product = {
-    name,
-    description,
-    price,
-    marketplaces,
-    ownerId: ctx.state.uid,
-  };
+    [productImage1, productImage2].forEach(async (file) => {
+      const { extension, mimeType, buffer } = file;
+      const path = await upload(
+        "pickups",
+        "random",
+        extension,
+        mimeType,
+        buffer,
+        true
+      );
 
-  const { id } = await db.products.add(product);
-  ctx.created({ id, ...product });
-});
+      imagePaths.push(path);
+    });
+
+    const body = await schema.validateAsync(ctx.request.body);
+    const { name, description, price, marketplaces } = body;
+
+    const product: Product = {
+      name,
+      description,
+      price,
+      marketplaces,
+      productImage: imagePaths,
+      ownerId: ctx.state.uid,
+    };
+
+    const { id } = await db.products.add(product);
+    ctx.created({ id, ...product });
+  }
+);
 
 router.put("/:id", verifyToken(["bank", "seller"]), async (ctx) => {
   const productId = ctx.params.id;
