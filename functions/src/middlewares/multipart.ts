@@ -10,6 +10,7 @@ type File = {
   originalName: string;
   encoding: string;
   mimeType: string;
+  extension: string;
   size: number;
   buffer: Buffer;
 };
@@ -92,6 +93,10 @@ function extract(
       }
 
       const { filename, encoding, mimeType } = metadata;
+      const splittedName = filename.split(".");
+      const extension = splittedName.pop() as string;
+      const originalName = splittedName.join(".");
+
       const filepath = path.join(tmpdir, filename);
 
       const writeStream = fs.createWriteStream(filepath);
@@ -109,8 +114,9 @@ function extract(
 
               files[fieldName] = {
                 fieldName,
-                originalName: filename,
+                originalName,
                 encoding,
+                extension,
                 mimeType,
                 buffer,
                 size,
