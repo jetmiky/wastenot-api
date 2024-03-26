@@ -36,7 +36,7 @@ declare module "koa" {
  * @param {string | string[]} fieldNames Only filters provided fieldnames.
  * @return {Middleware}
  */
-function uploads(fieldNames?: string | string[]): Middleware {
+function multipart(fieldNames: string | string[]): Middleware {
   const filteredNames =
     typeof fieldNames === "string" ? [fieldNames] : fieldNames;
 
@@ -64,7 +64,7 @@ function uploads(fieldNames?: string | string[]): Middleware {
  */
 function extract(
   req: IncomingMessage,
-  fieldNames?: string[]
+  fieldNames: string[]
 ): Promise<ExtractResponse> {
   return new Promise((resolve, reject) => {
     const bb = busboy({
@@ -81,13 +81,13 @@ function extract(
     const tmpdir = os.tmpdir();
 
     bb.on("field", (key, value) => {
-      if (fieldNames?.length && fieldNames.includes(key)) {
+      if (fieldNames.length && fieldNames.includes(key)) {
         fields[key] = value;
       }
     });
 
     bb.on("file", (fieldName, stream, metadata) => {
-      if (!(fieldNames?.length && fieldNames.includes(fieldName))) {
+      if (!(fieldNames.length && fieldNames.includes(fieldName))) {
         return;
       }
 
@@ -144,4 +144,4 @@ function extract(
   });
 }
 
-export default uploads;
+export default multipart;
