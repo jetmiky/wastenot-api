@@ -1,4 +1,5 @@
 import { getStorage } from "firebase-admin/storage";
+import { v4 as uuid } from "uuid";
 
 type DirectoryPath = "badges" | "delivers" | "pickups" | "products" | "misc";
 
@@ -6,25 +7,32 @@ type DirectoryPath = "badges" | "delivers" | "pickups" | "products" | "misc";
  * Handle buffer file upload to Firebase Storage.
  *
  * @param { DirectoryPath } path  Path relative to root storage.
- * @param { string } filename     Desired name of file uploaded, includes ext.
+ * @param { string } filename     Desired file name uploaded, not include ext.
+ * @param { string } extension    Extension of file uploaded.
  * @param { string } contentType  Content type of file, ie. image/png.
  * @param { Buffer } data         Buffer data of file.
  * @param { boolean } makePublic  Make the file accessible by public.
- * @return { Promise<string> }    Returns public URL of uploaded file.
+ * @return { Promise<string> }    Returns storage path of uploaded file.
  */
 export async function upload(
   path: DirectoryPath,
-  filename: string,
+  filename: string | "random",
+  extension: string,
   contentType: string,
   data: Buffer,
   makePublic?: boolean
 ): Promise<string> {
-  const file = getStorage().bucket().file(`${path}/${filename}`);
+  if (filename === "random") {
+    filename = uuid();
+  }
+
+  const storagePath = `${path}/${filename}.${extension}`;
+  const file = getStorage().bucket().file(storagePath);
   await file.save(data, { contentType });
 
   if (makePublic) await file.makePublic();
 
-  return file.publicUrl();
+  return storagePath;
 }
 
 /**
