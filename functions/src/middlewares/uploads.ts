@@ -16,7 +16,7 @@ type File = {
 
 type ExtractResponse = {
   fields: { [key: string]: string };
-  files: File[];
+  files: { [key: string]: File };
 };
 
 /**
@@ -25,7 +25,7 @@ type ExtractResponse = {
  */
 declare module "koa" {
   interface Request {
-    files?: File[];
+    files: { [key: string]: File };
   }
 }
 
@@ -33,16 +33,20 @@ declare module "koa" {
  * Middleware to handle files upload.
  * Executed on 'multipart/form-data' content-type headers.
  *
+ * @param {string | string[]} fieldNames Only filters provided fieldnames.
  * @return {Middleware}
  */
-function uploads(): Middleware {
+function uploads(fieldNames?: string | string[]): Middleware {
+  const filteredNames =
+    typeof fieldNames === "string" ? [fieldNames] : fieldNames;
+
   return async (ctx: Context, next: Next) => {
     const contentTypeHeader = ctx.request.headers["content-type"];
     if (!contentTypeHeader?.startsWith("multipart/form-data")) {
       return next();
     }
 
-    const { files, fields } = await extract(ctx.req);
+    const { files, fields } = await extract(ctx.req, filteredNames);
 
     ctx.request.body = fields;
     ctx.request.files = files;
@@ -55,9 +59,13 @@ function uploads(): Middleware {
  * Extract form-data request body using busboy.
  *
  * @param { IncomingMessage } req Koa Context Req object
+ * @param { string[] } fieldNames Filtered field names
  * @return { Promise<ExtractResponse> } Extraction of fields and files
  */
-function extract(req: IncomingMessage): Promise<ExtractResponse> {
+function extract(
+  req: IncomingMessage,
+  fieldNames?: string[]
+): Promise<ExtractResponse> {
   return new Promise((resolve, reject) => {
     const bb = busboy({
       headers: req.headers,
@@ -65,7 +73,7 @@ function extract(req: IncomingMessage): Promise<ExtractResponse> {
     });
 
     const fields: { [key: string]: string } = {};
-    const files: File[] = [];
+    const files: { [key: string]: File } = {};
     const fileWrites: Promise<void>[] = [];
 
     // Note: os.tmpdir() points to an in-memory file system on GCF
@@ -73,10 +81,16 @@ function extract(req: IncomingMessage): Promise<ExtractResponse> {
     const tmpdir = os.tmpdir();
 
     bb.on("field", (key, value) => {
-      fields[key] = value;
+      if (fieldNames?.length && fieldNames.includes(key)) {
+        fields[key] = value;
+      }
     });
 
     bb.on("file", (fieldName, stream, metadata) => {
+      if (!(fieldNames?.length && fieldNames.includes(fieldName))) {
+        return;
+      }
+
       const { filename, encoding, mimeType } = metadata;
       const filepath = path.join(tmpdir, filename);
 
@@ -93,14 +107,14 @@ function extract(req: IncomingMessage): Promise<ExtractResponse> {
 
               if (err) return reject(err);
 
-              files.push({
+              files[fieldName] = {
                 fieldName,
                 originalName: filename,
                 encoding,
                 mimeType,
                 buffer,
                 size,
-              });
+              };
 
               fs.unlinkSync(filepath);
               resolve();
