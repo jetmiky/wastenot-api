@@ -155,6 +155,7 @@ async function initializeDevelopment(): Promise<void> {
         const DEFAULT_PRODUCT_PRICE = 10000;
         const DEFAULT_PRODUCT_STORE_NAME = "Tokopedia";
         const DEFAULT_PRODUCT_STORE_URL = "https://www.google.com";
+        const DEFAULT_PRODUCT_IMG_URL = "";
 
         await db.products.add({
           name: DEFAULT_PRODUCT_NAME,
@@ -167,6 +168,7 @@ async function initializeDevelopment(): Promise<void> {
               url: DEFAULT_PRODUCT_STORE_URL,
             },
           ],
+          productImage: [DEFAULT_PRODUCT_IMG_URL],
         });
 
         initialized.push("Development.Firestore.Products");
