@@ -18,10 +18,13 @@ const products: Product[] = [
       },
     ],
     ownerId: "",
-    productImage: [],
+    productImage: [
+      "https://firebasestorage.googleapis.com/v0/b/wastenot-c13cd.appspot.com/o/mockups%2Flampu_sendok_1.jpg?alt=media&token=1fcc170d-3c2c-4340-9b36-dbc3525cdf1e",
+      "https://firebasestorage.googleapis.com/v0/b/wastenot-c13cd.appspot.com/o/mockups%2Flampu_sendok_2.jpg?alt=media&token=8088aeab-f300-49c7-a459-5621c45fd4d5",
+    ],
   },
   {
-    name: "Piring Estetik",
+    name: "Pot Tanaman dan ATK",
     description:
       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     price: 300000,
@@ -32,7 +35,10 @@ const products: Product[] = [
       },
     ],
     ownerId: "",
-    productImage: [],
+    productImage: [
+      "https://firebasestorage.googleapis.com/v0/b/wastenot-c13cd.appspot.com/o/mockups%2Fpot_tanaman.jpg?alt=media&token=53051d0b-0b01-45c7-afea-6f5365b5dcaa",
+      "https://firebasestorage.googleapis.com/v0/b/wastenot-c13cd.appspot.com/o/mockups%2Ftempat_atk.jpg?alt=media&token=331f4452-921e-42c0-b902-a5eea026d7e9",
+    ],
   },
 ];
 
