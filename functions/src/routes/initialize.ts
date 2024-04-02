@@ -117,8 +117,6 @@ async function initializeMockups(): Promise<void> {
         bankIds.push(uid);
         admin.auth().setCustomUserClaims(uid, { role: bank.role });
 
-        initialized.push("Mockups.Auth.Banks");
-
         await db.banks.doc(uid).set({
           name: bank.name,
           address: bank.address,
@@ -126,9 +124,10 @@ async function initializeMockups(): Promise<void> {
           closedDates: bank.closedDates,
           geoPoint: bank.geoPoint,
         });
-
-        initialized.push("Mockups.Firestore.Banks");
       }
+
+      initialized.push("Mockups.Auth.Banks");
+      initialized.push("Mockups.Firestore.Banks");
     }
 
     if (users.empty) {
@@ -144,8 +143,6 @@ async function initializeMockups(): Promise<void> {
 
         admin.auth().setCustomUserClaims(uid, { role: user.role });
 
-        initialized.push("Mockups.Auth.Users");
-
         const levelDocs = await db.levels
           .where("name", "==", "Epic")
           .limit(1)
@@ -159,9 +156,10 @@ async function initializeMockups(): Promise<void> {
           wasteCollected: user.wasteCollected,
           levelId: epicLevelId,
         });
-
-        initialized.push("Mockups.Firestore.Users");
       }
+
+      initialized.push("Mockups.Auth.Users");
+      initialized.push("Mockups.Firestore.Users");
     }
 
     if (sellers.empty) {
@@ -178,15 +176,15 @@ async function initializeMockups(): Promise<void> {
         admin.auth().setCustomUserClaims(uid, { role: seller.role });
 
         sellerIds.push(uid);
-        initialized.push("Mockups.Auth.Sellers");
 
         await db.sellers.doc(uid).set({
           name: seller.name,
           address: seller.address,
         });
-
-        initialized.push("Mockups.Firestore.Sellers");
       }
+
+      initialized.push("Mockups.Auth.Sellers");
+      initialized.push("Mockups.Firestore.Sellers");
     }
 
     if (products.empty) {
@@ -199,9 +197,9 @@ async function initializeMockups(): Promise<void> {
           ownerId: sellerIds[index],
           productImage: product.productImage,
         });
-
-        initialized.push("Mockups.Firestore.Products");
       }
+
+      initialized.push("Mockups.Firestore.Products");
     }
 
     batch.commit();
