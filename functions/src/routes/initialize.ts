@@ -3,12 +3,15 @@ import admin = require("firebase-admin");
 import Joi = require("joi");
 
 import { logger } from "firebase-functions/v1";
-import { GeoPoint } from "firebase-admin/firestore";
 import db from "../utils/db";
 import { UnauthorizedError } from "../types/Error";
 
 import levelsData from "../data/levels";
 import wastesData from "../data/wastes";
+import usersMockupData from "../mockups/users";
+import banksMockupData from "../mockups/banks";
+import sellersMockupData from "../mockups/sellers";
+import productsMockupData from "../mockups/products";
 
 const router = new Router();
 const initialized: string[] = [];
@@ -83,167 +86,125 @@ async function initializeFirestore(): Promise<void> {
 }
 
 /**
- * Data seeds for development environment.
+ * Mockup data seeds for database.
  *
  * @return { Promise<void> }
  */
-async function initializeDevelopment(): Promise<void> {
+async function initializeMockups(): Promise<void> {
   try {
-    if (process.env.FUNCTIONS_EMULATOR === "true") {
-      const batch = db.firestore.batch();
+    const batch = db.firestore.batch();
 
-      const banks = await db.banks.get();
-      const users = await db.users.get();
-      const sellers = await db.sellers.get();
-      const products = await db.products.get();
+    const banks = await db.banks.get();
+    const users = await db.users.get();
+    const sellers = await db.sellers.get();
+    const products = await db.products.get();
 
-      let bankUid = "";
+    const bankIds: string[] = [];
+    const sellerIds: string[] = [];
+    let epicLevelId = "";
 
-      if (banks.empty) {
-        const DEFAULT_BANK_NAME = "Default Bank";
-        const DEFAULT_BANK_EMAIL = "bank@wastenot.id";
-        const DEFAULT_BANK_PASSWORD = "password";
-        const DEFAULT_BANK_PHONE_NUMBER = "+6212345678901";
-        const DEFAULT_BANK_ADDRESS = "Jakarta";
-        const DEFAULT_LATITUDE = 1;
-        const DEFAULT_LONGITUDE = 2;
-
+    if (banks.empty) {
+      for (const bank of banksMockupData) {
         const { uid } = await admin.auth().createUser({
-          displayName: DEFAULT_BANK_NAME,
-          email: DEFAULT_BANK_EMAIL,
-          password: DEFAULT_BANK_PASSWORD,
-          phoneNumber: DEFAULT_BANK_PHONE_NUMBER,
+          displayName: bank.name,
+          email: bank.email,
+          password: bank.password,
+          phoneNumber: bank.phoneNumber,
           emailVerified: false,
           disabled: false,
         });
 
-        bankUid = uid;
-        admin.auth().setCustomUserClaims(uid, { role: "bank" });
+        bankIds.push(uid);
+        admin.auth().setCustomUserClaims(uid, { role: bank.role });
 
-        initialized.push("Development.Auth.Banks");
+        initialized.push("Mockups.Auth.Banks");
 
         await db.banks.doc(uid).set({
-          name: DEFAULT_BANK_NAME,
-          address: DEFAULT_BANK_ADDRESS,
-          openSchedules: [
-            {
-              dayOfWeek: "1",
-              scheduleTimeOpen: "08:00",
-              scheduleTimeClose: "17:00",
-            },
-            {
-              dayOfWeek: "2",
-              scheduleTimeOpen: "09:00",
-              scheduleTimeClose: "16:00",
-            },
-            {
-              dayOfWeek: "3",
-              scheduleTimeOpen: "10:00",
-              scheduleTimeClose: "15:00",
-            },
-          ],
-          closedDates: ["2023-01-01", "2023-01-02"],
-          geoPoint: new GeoPoint(DEFAULT_LATITUDE, DEFAULT_LONGITUDE),
+          name: bank.name,
+          address: bank.address,
+          openSchedules: bank.openSchedules,
+          closedDates: bank.closedDates,
+          geoPoint: bank.geoPoint,
         });
 
-        initialized.push("Development.Firestore.Banks");
+        initialized.push("Mockups.Firestore.Banks");
       }
+    }
 
-      if (products.empty) {
-        const DEFAULT_PRODUCT_NAME = "A Default Product";
-        const DEFAULT_PRODUCT_DESC = "Lorem impsum dolor sit amet.";
-        const DEFAULT_PRODUCT_PRICE = 10000;
-        const DEFAULT_PRODUCT_STORE_NAME = "Tokopedia";
-        const DEFAULT_PRODUCT_STORE_URL = "https://www.google.com";
-        const DEFAULT_PRODUCT_IMG_URL = "";
-
-        await db.products.add({
-          name: DEFAULT_PRODUCT_NAME,
-          description: DEFAULT_PRODUCT_DESC,
-          price: DEFAULT_PRODUCT_PRICE,
-          ownerId: bankUid,
-          marketplaces: [
-            {
-              name: DEFAULT_PRODUCT_STORE_NAME,
-              url: DEFAULT_PRODUCT_STORE_URL,
-            },
-          ],
-          productImage: [DEFAULT_PRODUCT_IMG_URL],
-        });
-
-        initialized.push("Development.Firestore.Products");
-      }
-
-      if (users.empty) {
-        const DEFAULT_USER_NAME = "Default User";
-        const DEFAULT_USER_EMAIL = "user@wastenot.id";
-        const DEFAULT_USER_PASSWORD = "password";
-        const DEFAULT_USER_PHONE_NUMBER = "+621234567890";
-        const DEFAULT_USER_ADDRESS = "Jakarta";
-        const DEFAULT_USER_GENDER = "Laki Laki";
-
+    if (users.empty) {
+      for (const user of usersMockupData) {
         const { uid } = await admin.auth().createUser({
-          displayName: DEFAULT_USER_NAME,
-          email: DEFAULT_USER_EMAIL,
-          password: DEFAULT_USER_PASSWORD,
-          phoneNumber: DEFAULT_USER_PHONE_NUMBER,
+          displayName: user.name,
+          email: user.email,
+          password: user.password,
+          phoneNumber: user.phoneNumber,
           emailVerified: false,
           disabled: false,
         });
 
-        admin.auth().setCustomUserClaims(uid, { role: "user" });
+        admin.auth().setCustomUserClaims(uid, { role: user.role });
 
-        initialized.push("Development.Auth.Users");
-
-        let levelId = "";
+        initialized.push("Mockups.Auth.Users");
 
         const levelDocs = await db.levels
           .where("name", "==", "Epic")
           .limit(1)
           .get();
-        levelDocs.forEach((docs) => (levelId = docs.id));
+        levelDocs.forEach((docs) => (epicLevelId = docs.id));
 
         await db.users.doc(uid).set({
-          address: DEFAULT_USER_ADDRESS,
-          gender: DEFAULT_USER_GENDER,
-          levelId: levelId,
-          totalPoints: 22,
-          wasteCollected: 10,
+          address: user.address,
+          gender: user.gender,
+          totalPoints: user.totalPoints,
+          wasteCollected: user.wasteCollected,
+          levelId: epicLevelId,
         });
 
-        initialized.push("Development.Firestore.Users");
+        initialized.push("Mockups.Firestore.Users");
       }
+    }
 
-      if (sellers.empty) {
-        const DEFAULT_SELLER_NAME = "Default Seller";
-        const DEFAULT_SELLER_EMAIL = "seller@wastenot.id";
-        const DEFAULT_SELLER_PASSWORD = "password";
-        const DEFAULT_SELLER_PHONE_NUMBER = "+6212345678902";
-        const DEFAULT_SELLER_ADDRESS = "Jakarta";
-
+    if (sellers.empty) {
+      for (const seller of sellersMockupData) {
         const { uid } = await admin.auth().createUser({
-          displayName: DEFAULT_SELLER_NAME,
-          email: DEFAULT_SELLER_EMAIL,
-          password: DEFAULT_SELLER_PASSWORD,
-          phoneNumber: DEFAULT_SELLER_PHONE_NUMBER,
+          displayName: seller.name,
+          email: seller.email,
+          password: seller.password,
+          phoneNumber: seller.phoneNumber,
           emailVerified: false,
           disabled: false,
         });
 
-        admin.auth().setCustomUserClaims(uid, { role: "seller" });
+        admin.auth().setCustomUserClaims(uid, { role: seller.role });
 
-        initialized.push("Development.Auth.Sellers");
+        sellerIds.push(uid);
+        initialized.push("Mockups.Auth.Sellers");
 
         await db.sellers.doc(uid).set({
-          name: DEFAULT_SELLER_NAME,
-          address: DEFAULT_SELLER_ADDRESS,
+          name: seller.name,
+          address: seller.address,
         });
 
-        initialized.push("Development.Firestore.Sellers");
+        initialized.push("Mockups.Firestore.Sellers");
       }
-
-      batch.commit();
     }
+
+    if (products.empty) {
+      for (const [index, product] of productsMockupData.entries()) {
+        await db.products.add({
+          name: product.name,
+          description: product.description,
+          price: product.price,
+          marketplaces: product.marketplaces,
+          ownerId: sellerIds[index],
+          productImage: product.productImage,
+        });
+
+        initialized.push("Mockups.Firestore.Products");
+      }
+    }
+
+    batch.commit();
   } catch (error) {
     logger.error("Failed initializing development environments: ", error);
     throw Error("Error in initializing development environment");
@@ -253,9 +214,12 @@ async function initializeDevelopment(): Promise<void> {
 router.post("/", async (ctx) => {
   const schema = Joi.object({
     INIT_KEY: Joi.string().required().error(new UnauthorizedError()),
+    SEED_MOCKUPS: Joi.bool().default(false),
   });
 
-  const { INIT_KEY: key } = await schema.validateAsync(ctx.request.body);
+  const { INIT_KEY: key, SEED_MOCKUPS } = await schema.validateAsync(
+    ctx.request.body
+  );
   const _key = process.env.INIT_KEY;
 
   if (key !== _key) throw new UnauthorizedError();
@@ -263,7 +227,7 @@ router.post("/", async (ctx) => {
   await Promise.all([
     initializeAdmin(),
     initializeFirestore(),
-    initializeDevelopment(),
+    SEED_MOCKUPS ? initializeMockups() : Promise.resolve(null),
   ]);
 
   ctx.ok({ success: true, initialized });
