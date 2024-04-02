@@ -31,8 +31,9 @@ export async function upload(
   await file.save(data, { contentType });
 
   if (makePublic) await file.makePublic();
+  const publicUrl = file.publicUrl();
 
-  return storagePath;
+  return makePublic ? publicUrl : storagePath;
 }
 
 /**

@@ -64,11 +64,11 @@ router.post(
     });
 
     const { productImage1, productImage2 } = ctx.request.files;
-    const imagePaths: string[] = [];
+    const imageUrls: string[] = [];
 
     [productImage1, productImage2].forEach(async (file) => {
       const { extension, mimeType, buffer } = file;
-      const path = await upload(
+      const url = await upload(
         "pickups",
         "random",
         extension,
@@ -77,7 +77,7 @@ router.post(
         true
       );
 
-      imagePaths.push(path);
+      imageUrls.push(url);
     });
 
     const body = await schema.validateAsync(ctx.request.body);
@@ -88,7 +88,7 @@ router.post(
       description,
       price,
       marketplaces,
-      productImage: imagePaths,
+      productImage: imageUrls,
       ownerId: ctx.state.uid,
     };
 
