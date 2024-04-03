@@ -28,7 +28,9 @@ router.post("/register", async (ctx) => {
   const schema = Joi.object({
     name: Joi.string().min(3).max(100).required(),
     email: Joi.string().email().required(),
-    password: Joi.string().pattern(/^[a-zA-Z0-9]{8,30}/, {}),
+    password: Joi.string()
+      .pattern(/^[a-zA-Z0-9]{8,30}/, {})
+      .required(),
     confirmPassword: Joi.ref("password"),
     phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
   }).with("password", "confirmPassword");
@@ -53,23 +55,23 @@ router.post("/register", async (ctx) => {
 
 router.put("/", verifyToken("user"), async (ctx) => {
   const schema = Joi.object({
-    name: Joi.string().min(3).max(100).required(),
-    email: Joi.string().email().required(),
+    name: Joi.string().min(3).max(100),
+    email: Joi.string().email(),
     password: Joi.string().pattern(/^[a-zA-Z0-9]{8,30}/, {}),
     confirmPassword: Joi.ref("password"),
-    phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
+    phoneNumber: Joi.string().pattern(phoneNumberPattern),
   }).with("password", "confirmPassword");
 
-  const { name, email, password, phoneNumber } = await schema.validateAsync(
-    ctx.req.body
-  );
+  const body = await schema.validateAsync(ctx.req.body);
+  const { name, email, password, phoneNumber } = body;
+  const updatedUser: { [key: string]: string } = {};
 
-  await admin.auth().updateUser(ctx.state.uid, {
-    displayName: name,
-    email,
-    password,
-    phoneNumber,
-  });
+  if (name) updatedUser.displayName = name;
+  if (email) updatedUser.email = email;
+  if (password) updatedUser.password = password;
+  if (phoneNumber) updatedUser.phoneNumber = phoneNumber;
+
+  await admin.auth().updateUser(ctx.state.uid, updatedUser);
 
   return ctx.ok({ uid: ctx.state.uid, email });
 });
