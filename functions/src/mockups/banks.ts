@@ -9,7 +9,7 @@ const users: BankData[] = [
     name: "Dinas Lingkungan Tangerang Selatan",
     email: "dinastangsel@gmail.com",
     password: "password",
-    phoneNumber: "+62123456783",
+    phoneNumber: "+621234567830",
     address: "Tangerang Selatan",
     openSchedules: [
       {
@@ -31,7 +31,7 @@ const users: BankData[] = [
     name: "Bank Sampah Cempaka",
     email: "banksampahcempaka@gmail.com",
     password: "password",
-    phoneNumber: "+62123456784",
+    phoneNumber: "+621234567831",
     address: "Jakarta Selatan",
     openSchedules: [
       {
