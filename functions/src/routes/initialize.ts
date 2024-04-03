@@ -101,7 +101,6 @@ async function initializeMockups(): Promise<void> {
 
     const bankIds: string[] = [];
     const sellerIds: string[] = [];
-    let epicLevelId = "";
 
     if (banks.empty) {
       for (const bank of banksMockupData) {
@@ -142,19 +141,14 @@ async function initializeMockups(): Promise<void> {
         });
 
         admin.auth().setCustomUserClaims(uid, { role: user.role });
-
-        const levelDocs = await db.levels
-          .where("name", "==", "Epic")
-          .limit(1)
-          .get();
-        levelDocs.forEach((docs) => (epicLevelId = docs.id));
+        const levelId = await getLevelId(user.totalPoints);
 
         await db.users.doc(uid).set({
           address: user.address,
           gender: user.gender,
           totalPoints: user.totalPoints,
           wasteCollected: user.wasteCollected,
-          levelId: epicLevelId,
+          levelId,
         });
       }
 
@@ -207,6 +201,23 @@ async function initializeMockups(): Promise<void> {
     logger.error("Failed initializing development environments: ", error);
     throw Error("Error in initializing development environment");
   }
+}
+
+/**
+ * Get user level id.
+ *
+ * @param { number } point Points collected.
+ * @return { Promise<string> }
+ */
+async function getLevelId(point: number): Promise<string> {
+  let levelId = "";
+  const snapshot = await db.levels
+    .where("requiredPoint", "==", point)
+    .limit(1)
+    .get();
+  snapshot.forEach(({ id }) => (levelId = id));
+
+  return levelId;
 }
 
 router.post("/", async (ctx) => {

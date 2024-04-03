@@ -13,7 +13,7 @@ const users: UserData[] = [
     gender: "Laki Laki",
     role: "user",
     levelId: "",
-    totalPoints: 10,
+    totalPoints: 15,
     wasteCollected: 10,
   },
   {
@@ -25,7 +25,7 @@ const users: UserData[] = [
     gender: "Perempuan",
     role: "user",
     levelId: "",
-    totalPoints: 35,
+    totalPoints: 25,
     wasteCollected: 20,
   },
 ];
