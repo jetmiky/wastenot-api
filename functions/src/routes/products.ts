@@ -7,30 +7,38 @@ import db from "../utils/db";
 import { upload } from "../utils/storage";
 import { ForbiddenError, NotFoundError } from "../types/Error";
 import Product from "../types/Product";
+import Seller from "../types/Seller";
 
 const router = new Router();
+
+type ProductResponse = Product & { seller: Seller };
 
 router.get("/", verifyToken("user"), async (ctx) => {
   const page = parseInt(ctx.query.page as string);
   const paginate = isNaN(page) ? 1 : page;
   const search = ctx.query.search;
 
-  const products: Product[] = [];
-  const documentsRef = search ?
+  const products: ProductResponse[] = [];
+  const snapshotRef = search ?
     db.products
       .orderBy("name")
       .startAt(search)
       .endAt(search + "~") :
     db.products;
 
-  const documents = await documentsRef
+  const snapshot = await snapshotRef
     .limit(6)
     .offset((paginate - 1) * 6)
     .get();
 
-  documents.forEach((document) => {
-    products.push({ ...document.data(), id: document.id });
-  });
+  for (const document of snapshot.docs) {
+    const product = document.data();
+
+    const sellerSnapshot = await db.sellers.doc(product.ownerId).get();
+    const seller = sellerSnapshot.data() as Seller;
+
+    products.push({ ...product, id: document.id, seller });
+  }
 
   ctx.ok(products);
 });
@@ -41,8 +49,12 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
 
   if (!document.exists) throw new NotFoundError();
 
-  const product = document.data();
-  ctx.ok(product);
+  const product = document.data() as Product;
+
+  const sellerSnapshot = await db.sellers.doc(product.ownerId).get();
+  const seller = sellerSnapshot.data() as Seller;
+
+  ctx.ok({ ...product, id: document.id, seller });
 });
 
 router.post(
