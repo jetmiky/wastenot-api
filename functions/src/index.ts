@@ -1,5 +1,6 @@
 import functions = require("firebase-functions");
 import admin = require("firebase-admin");
+import * as serviceAccount from "./serviceAccount.json";
 
 import Koa = require("koa");
 import cors = require("@koa/cors");
@@ -8,7 +9,13 @@ import { bodyParser } from "@koa/bodyparser";
 import handleErrors from "./middlewares/errors";
 import Router = require("@koa/router");
 
-admin.initializeApp(functions.config().firebase);
+if (process.env.FUNCTIONS_EMULATOR === "true") {
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+  });
+} else {
+  admin.initializeApp(functions.config().firebase);
+}
 
 import auth from "./routes/auth";
 import pickup from "./routes/pickups";
