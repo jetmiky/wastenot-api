@@ -4,35 +4,65 @@ import Joi = require("joi");
 import verifyToken from "../middlewares/tokens";
 import multipart from "../middlewares/multipart";
 import db from "../utils/db";
-import { upload } from "../utils/storage";
+import { upload, getSignedUrl } from "../utils/storage";
 import { FieldValue } from "firebase-admin/firestore";
 
 import { BadRequestError, ForbiddenError, NotFoundError } from "../types/Error";
 import DeliverOrder, { DeliverStatus, Waste } from "../types/DeliverOrder";
+import Bank from "../types/Bank";
 import { timestampFromISODateString } from "../utils/formats";
 import { phoneNumberPattern } from "../utils/patterns";
 
 const router = new Router();
+
+type DeliverOrderResponse = DeliverOrder & {
+  bank: Bank;
+  wasteImageUrl: string;
+  createdTime: string;
+  updatedTime: string;
+  wastesUpdate?: (Waste & { wasteName: string })[];
+};
 
 router.get("/", verifyToken("user"), async (ctx) => {
   const status = ctx.query.status as DeliverStatus;
   const page = parseInt(ctx.query.page as string);
   const paginate = isNaN(page) ? 1 : page;
 
-  const operator = status.toLowerCase() === "selesai" ? "==" : "!=";
+  const orders: DeliverOrderResponse[] = [];
 
-  const orders: DeliverOrder[] = [];
-  const documents = await db.deliverOrders
-    .where("userId", "==", ctx.state.uid)
-    .where("status", operator, "Selesai")
+  let query = db.deliverOrders.where("userId", "==", ctx.state.uid);
+
+  if (status) {
+    query = query.where("status", "==", status);
+  }
+
+  query = query
     .orderBy("createdAt")
     .limit(6)
-    .offset(paginate * 6)
-    .get();
+    .offset((paginate - 1) * 6);
 
-  documents.forEach((document) => {
-    orders.push({ ...document.data(), id: document.id });
-  });
+  const documents = await query.get();
+
+  for (const document of documents.docs) {
+    const order = document.data();
+
+    const createdTime = order.createdAt.toDate().toISOString();
+    const updatedTime = order.createdAt.toDate().toISOString();
+
+    const bankSnapshot = await db.banks.doc(order.bankId).get();
+    const bank = bankSnapshot.data() as Bank;
+
+    const wasteImageUrl = await getSignedUrl(order.wasteImagePath);
+
+    orders.push({
+      ...order,
+      id: document.id,
+      bank,
+      wasteImageUrl,
+      createdTime,
+      updatedTime,
+    });
+  }
 
   ctx.ok(orders);
 });
@@ -43,10 +73,38 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
 
   if (!document.exists) throw new NotFoundError();
 
-  const order = document.data();
+  const order = document.data() as DeliverOrder;
   if (order?.userId !== ctx.state.uid) throw new ForbiddenError();
 
-  ctx.ok(order);
+  const bankSnapshot = await db.banks.doc(order.bankId).get();
+  const bank = bankSnapshot.data() as Bank;
+
+  const wasteImageUrl = await getSignedUrl(order.wasteImagePath);
+
+  const response: DeliverOrderResponse = {
+    ...order,
+    id,
+    bank,
+    wasteImageUrl,
+    createdTime: order.createdAt.toDate().toISOString(),
+    updatedTime: "",
+    wastesUpdate: [],
+  };
+
+  if (order.status === "Selesai") {
+    response.updatedTime = order.updatedAt.toDate().toISOString();
+  } else {
+    response.updatedTime = order.createdAt.toDate().toISOString();
+  }
+
+  for (const waste of order.wastes) {
+    const wasteDoc = await db.wastes.doc(waste.wasteId).get();
+    const wasteName = wasteDoc.data()?.name as string;
+
+    response.wastesUpdate?.push({ ...waste, wasteName });
+  }
+
+  ctx.ok(response);
 });
 
 router.post("/", verifyToken("user"), async (ctx) => {
