@@ -12,6 +12,10 @@ import usersMockupData from "../mockups/users";
 import banksMockupData from "../mockups/banks";
 import sellersMockupData from "../mockups/sellers";
 import productsMockupData from "../mockups/products";
+import pickupOrdersMockupData from "../mockups/pickups";
+
+import { getRandomItem } from "../utils/random";
+import Waste from "../types/Waste";
 
 const router = new Router();
 const initialized: string[] = [];
@@ -98,6 +102,7 @@ async function initializeMockups(): Promise<void> {
     const users = await db.users.get();
     const sellers = await db.sellers.get();
     const products = await db.products.get();
+    const pickups = await db.pickupOrders.get();
 
     const bankIds: string[] = [];
     const sellerIds: string[] = [];
@@ -194,6 +199,36 @@ async function initializeMockups(): Promise<void> {
       }
 
       initialized.push("Mockups.Firestore.Products");
+    }
+
+    if (pickups.empty) {
+      for (const pickupOrder of pickupOrdersMockupData) {
+        const { phone } = pickupOrder.requester;
+        const { uid } = await admin.auth().getUserByPhoneNumber(phone);
+
+        const bankId = getRandomItem(bankIds);
+
+        const wasteIds: string[] = [];
+        const wastes = await db.wastes.listDocuments();
+        wastes.forEach(({ id }) => wasteIds.push(id));
+
+        const wasteId = getRandomItem(wasteIds);
+        const wasteWeight = 3;
+        let wastePoint = 0;
+
+        const wasteDocument = await db.wastes.doc(wasteId).get();
+        const waste = wasteDocument.data() as Waste;
+
+        wastePoint = waste.point * wasteWeight;
+
+        pickupOrder.userId = uid;
+        pickupOrder.bankId = bankId;
+        pickupOrder.wastes.push({ wasteId, wastePoint, wasteWeight });
+
+        await db.pickupOrders.add(pickupOrder);
+      }
+
+      initialized.push("Mockups.Firestore.PickupOrders");
     }
 
     batch.commit();
