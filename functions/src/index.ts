@@ -12,6 +12,7 @@ import Router = require("@koa/router");
 if (process.env.FUNCTIONS_EMULATOR === "true") {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+    storageBucket: "wastenot-c13cd.appspot.com",
   });
 } else {
   admin.initializeApp(functions.config().firebase);
