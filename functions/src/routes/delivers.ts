@@ -107,16 +107,20 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   ctx.ok(response);
 });
 
-router.post("/", verifyToken("user"), async (ctx) => {
+router.post("/", verifyToken("user"), multipart("wasteImage"), async (ctx) => {
   const schema = Joi.object({
     bankId: Joi.string().required(),
     senderName: Joi.string().min(3).max(100).required(),
     senderPhone: Joi.string().pattern(phoneNumberPattern).required(),
     sendSchedule: Joi.date().iso().required(),
+    wasteImage: Joi.any(),
   });
 
   const body = await schema.validateAsync(ctx.req.body);
   const { bankId, senderName, senderPhone, sendSchedule } = body;
+
+  const { extension, mimeType, buffer } = ctx.request.files.wasteImage;
+  const path = await upload("delivers", "random", extension, mimeType, buffer);
 
   const { id } = await db.deliverOrders.add({
     userId: ctx.state.uid,
@@ -126,7 +130,7 @@ router.post("/", verifyToken("user"), async (ctx) => {
       phone: senderPhone,
     },
     sendSchedule: timestampFromISODateString(sendSchedule),
-    wasteImagePath: "",
+    wasteImagePath: path,
     wastes: [],
     status: "Belum diproses",
     createdAt: FieldValue.serverTimestamp(),

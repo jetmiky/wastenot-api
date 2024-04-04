@@ -115,8 +115,8 @@ router.post("/", verifyToken("user"), multipart("wasteImage"), async (ctx) => {
     requesterAddress: Joi.string().max(254).required(),
     pickupSchedule: Joi.date().iso().required(),
     geoPoint: Joi.object({
-      latitude: Joi.number().min(-90).max(90).required(),
-      longitude: Joi.number().min(-180).max(180).required(),
+      latitude: Joi.number().min(-90).max(90),
+      longitude: Joi.number().min(-180).max(180),
     }),
     wasteImage: Joi.any(),
   });
@@ -142,7 +142,7 @@ router.post("/", verifyToken("user"), multipart("wasteImage"), async (ctx) => {
       phone: requesterPhone,
       address: requesterAddress,
       pickupSchedule: timestampFromISODateString(pickupSchedule),
-      geoPoint: new GeoPoint(geoPoint.latitude, geoPoint.longitude),
+      geoPoint: new GeoPoint(geoPoint?.latitude ?? 0, geoPoint?.longitude ?? 0),
     },
     wasteImagePath: path,
     wastes: [],
