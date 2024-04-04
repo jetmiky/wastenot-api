@@ -33,11 +33,11 @@ router.post("/register", async (ctx) => {
       .required(),
     confirmPassword: Joi.ref("password"),
     phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
+    gender: Joi.string().valid("Laki Laki", "Perempuan").required(),
   }).with("password", "confirmPassword");
 
-  const { name, email, password, phoneNumber } = await schema.validateAsync(
-    ctx.req.body
-  );
+  const { name, email, password, phoneNumber, gender } =
+    await schema.validateAsync(ctx.req.body);
 
   const user = await admin.auth().createUser({
     displayName: name,
@@ -50,6 +50,20 @@ router.post("/register", async (ctx) => {
 
   await admin.auth().setCustomUserClaims(user.uid, { role: "user" });
 
+  let levelId = "";
+  const levelDocument = await db.levels.where("requiredPoint", "==", 0).get();
+  levelDocument.forEach(({ id }) => {
+    levelId = id;
+  });
+
+  await db.users.doc(user.uid).set({
+    levelId,
+    gender,
+    address: "",
+    totalPoints: 0,
+    wasteCollected: 0,
+  });
+
   return ctx.created({ uid: user.uid, email: user.email });
 });
 
@@ -60,10 +74,11 @@ router.put("/", verifyToken("user"), async (ctx) => {
     password: Joi.string().pattern(/^[a-zA-Z0-9]{8,30}/, {}),
     confirmPassword: Joi.ref("password"),
     phoneNumber: Joi.string().pattern(phoneNumberPattern),
+    gender: Joi.string().valid("Laki Laki", "Perempuan"),
   }).with("password", "confirmPassword");
 
   const body = await schema.validateAsync(ctx.req.body);
-  const { name, email, password, phoneNumber } = body;
+  const { name, email, password, phoneNumber, gender } = body;
   const updatedUser: { [key: string]: string } = {};
 
   if (name) updatedUser.displayName = name;
@@ -72,6 +87,7 @@ router.put("/", verifyToken("user"), async (ctx) => {
   if (phoneNumber) updatedUser.phoneNumber = phoneNumber;
 
   await admin.auth().updateUser(ctx.state.uid, updatedUser);
+  await db.users.doc(ctx.state.uid).update({ gender });
 
   return ctx.ok({ uid: ctx.state.uid, email });
 });

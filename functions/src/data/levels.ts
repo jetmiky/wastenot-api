@@ -1,7 +1,7 @@
 import Level from "../types/Level";
 
 const levels: Level[] = [
-  { name: "Warrior", requiredPoint: 5, nextLevelPoint: 10, badgeDesignUrl: "" },
+  { name: "Warrior", requiredPoint: 0, nextLevelPoint: 10, badgeDesignUrl: "" },
   { name: "Master", requiredPoint: 10, nextLevelPoint: 15, badgeDesignUrl: "" },
   {
     name: "Grand Master",
