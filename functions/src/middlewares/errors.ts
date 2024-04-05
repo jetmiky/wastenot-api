@@ -1,4 +1,5 @@
 import { Next, Context, Middleware } from "koa";
+import { logger } from "firebase-functions/v1";
 import * as Errors from "../types/Error";
 
 type Response = {
@@ -49,6 +50,7 @@ export default function handleErrors(): Middleware {
       } else if (error instanceof Errors.NotFoundError) {
         ctx.notFound(response);
       } else {
+        logger.error(response);
         ctx.internalServerError(response);
       }
     }
