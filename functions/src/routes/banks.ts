@@ -1,3 +1,4 @@
+import admin = require("firebase-admin");
 import Router = require("@koa/router");
 import JoiDateFactory from "@joi/date";
 import JoiCore = require("joi");
@@ -10,10 +11,11 @@ import db from "../utils/db";
 
 import { NotFoundError } from "../types/Error";
 import Bank from "../types/Bank";
+import { phoneNumberPattern } from "../utils/patterns";
 
 const router = new Router();
 
-router.get("/", verifyToken("user"), async (ctx) => {
+router.get("/", verifyToken(["user", "admin"]), async (ctx) => {
   const search = ctx.query.search;
 
   const banks: Bank[] = [];
@@ -33,38 +35,63 @@ router.get("/", verifyToken("user"), async (ctx) => {
   ctx.ok(banks);
 });
 
-router.get("/:id", verifyToken("admin"), async (ctx) => {
+router.get("/:id", verifyToken(["user", "admin"]), async (ctx) => {
   const id = ctx.params.id;
   const document = await db.banks.doc(id).get();
 
   if (!document.exists) throw new NotFoundError();
 
   const bank = document.data();
-  ctx.ok(bank);
+  ctx.ok({ ...bank, id: document.id });
 });
 
 router.post("/", verifyToken("admin"), async (ctx) => {
   const schema = Joi.object({
     name: Joi.string().min(3).max(100).required(),
+    email: Joi.string().email().required(),
+    password: Joi.string()
+      .pattern(/^[a-zA-Z0-9]{8,30}/, {})
+      .required(),
+    phoneNumber: Joi.string().pattern(phoneNumberPattern).required(),
     address: Joi.string().min(3).max(254).required(),
     closedDates: Joi.array()
       .items(Joi.date().format("YYYY-MM-DD").raw())
-      .required(),
+      .default([]),
     openSchedules: Joi.array()
       .items({
         dayOfWeek: Joi.date().format("E").raw(),
         scheduleTimeOpen: Joi.date().format("HH:mm").raw(),
         scheduleTimeClose: Joi.date().format("HH:mm").raw(),
       })
-      .required(),
+      .default([]),
     geoPoint: Joi.object({
-      latitude: Joi.number().min(-90).max(90).required(),
-      longitude: Joi.number().min(-180).max(180).required(),
+      latitude: Joi.number().min(-90).max(90).default(0),
+      longitude: Joi.number().min(-180).max(180).default(0),
     }),
   });
 
   const body = await schema.validateAsync(ctx.request.body);
-  const { name, address, closedDates, openSchedules, geoPoint } = body;
+  const {
+    name,
+    email,
+    password,
+    phoneNumber,
+    address,
+    closedDates,
+    openSchedules,
+    geoPoint,
+  } = body;
+
+  const { uid } = await admin.auth().createUser({
+    displayName: name,
+    email,
+    password,
+    phoneNumber,
+    emailVerified: false,
+    disabled: false,
+  });
+
+  admin.auth().setCustomUserClaims(uid, { role: "bank" });
 
   const bank: Bank = {
     name,
@@ -74,8 +101,9 @@ router.post("/", verifyToken("admin"), async (ctx) => {
     openSchedules,
   };
 
-  const { id } = await db.banks.add(bank);
-  ctx.created({ id, ...bank });
+  await db.banks.doc(uid).set(bank);
+
+  ctx.created({ bankId: uid, ...bank });
 });
 
 router.put("/:id", verifyToken("admin"), async (ctx) => {
@@ -83,6 +111,8 @@ router.put("/:id", verifyToken("admin"), async (ctx) => {
 
   const schema = Joi.object({
     name: Joi.string().min(3).max(100),
+    email: Joi.string().email(),
+    phoneNumber: Joi.string().pattern(phoneNumberPattern),
     address: Joi.string().min(3).max(254),
     closedDates: Joi.array().items(Joi.date().format("YYYY-MM-DD").raw()),
     openSchedules: Joi.array().items({
@@ -97,12 +127,28 @@ router.put("/:id", verifyToken("admin"), async (ctx) => {
   });
 
   const body = await schema.validateAsync(ctx.request.body);
-  const { name, address, closedDates, openSchedules, geoPoint } = body;
+  const {
+    name,
+    email,
+    phoneNumber,
+    address,
+    closedDates,
+    openSchedules,
+    geoPoint,
+  } = body;
 
   const documentRef = db.banks.doc(bankId);
   const document = await documentRef.get();
 
   if (!document.exists) throw new NotFoundError();
+
+  const updatedAuthBank: { [key: string]: string } = {};
+
+  if (name) updatedAuthBank.displayName = name;
+  if (email) updatedAuthBank.email = email;
+  if (phoneNumber) updatedAuthBank.phoneNumber = phoneNumber;
+
+  await admin.auth().updateUser(bankId, updatedAuthBank);
 
   const existingBank = document.data() as Bank;
   const updatedBank = { ...existingBank };
