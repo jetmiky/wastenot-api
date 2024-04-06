@@ -87,7 +87,7 @@ router.put("/", verifyToken("user"), async (ctx) => {
   if (phoneNumber) updatedUser.phoneNumber = phoneNumber;
 
   await admin.auth().updateUser(ctx.state.uid, updatedUser);
-  await db.users.doc(ctx.state.uid).update({ gender });
+  if (gender) await db.users.doc(ctx.state.uid).update({ gender });
 
   return ctx.ok({ uid: ctx.state.uid, email });
 });
