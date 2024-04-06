@@ -82,9 +82,7 @@ function extract(
     const tmpdir = os.tmpdir();
 
     bb.on("field", (key, value) => {
-      if (fieldNames.length && fieldNames.includes(key)) {
-        fields[key] = value;
-      }
+      fields[key] = value;
     });
 
     bb.on("file", (fieldName, stream, metadata) => {
