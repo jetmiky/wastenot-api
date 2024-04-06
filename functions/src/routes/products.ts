@@ -69,10 +69,12 @@ router.post(
       marketplaces: Joi.array()
         .min(1)
         .items({
-          name: Joi.string().required(),
+          name: Joi.string().valid("Tokopedia", "Lazada", "Shopee").required(),
           url: Joi.string().uri().required(),
         })
         .required(),
+      productImage1: Joi.any(),
+      productImage2: Joi.any(),
     });
 
     const { productImage1, productImage2 } = ctx.request.files;
