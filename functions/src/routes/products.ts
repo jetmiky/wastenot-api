@@ -43,6 +43,18 @@ router.get("/", verifyToken("user"), async (ctx) => {
   ctx.ok(products);
 });
 
+router.get("/seller", verifyToken("seller"), async (ctx) => {
+  const products: Product[] = [];
+  const snap = await db.products.where("ownerId", "==", ctx.state.uid).get();
+
+  for (const document of snap.docs) {
+    const product = document.data();
+    products.push({ ...product, id: document.id });
+  }
+
+  ctx.ok(products);
+});
+
 router.get("/:id", verifyToken("user"), async (ctx) => {
   const id = ctx.params.id;
   const document = await db.products.doc(id).get();
@@ -59,8 +71,8 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
 
 router.post(
   "/",
-  verifyToken(["bank", "seller"]),
-  multipart(["productImage1, productImage2"]),
+  verifyToken("seller"),
+  multipart("productImage1"),
   async (ctx) => {
     const schema = Joi.object({
       name: Joi.string().min(3).max(100).required(),
@@ -79,11 +91,15 @@ router.post(
 
     const { productImage1, productImage2 } = ctx.request.files;
     const imageUrls: string[] = [];
+    const images = [];
 
-    [productImage1, productImage2].forEach(async (file) => {
+    if (productImage1) images.push(productImage1);
+    if (productImage2) images.push(productImage2);
+
+    images.forEach(async (file) => {
       const { extension, mimeType, buffer } = file;
       const url = await upload(
-        "pickups",
+        "products",
         "random",
         extension,
         mimeType,
@@ -111,43 +127,71 @@ router.post(
   }
 );
 
-router.put("/:id", verifyToken(["bank", "seller"]), async (ctx) => {
-  const productId = ctx.params.id;
+router.put(
+  "/:id",
+  multipart("productImage1"),
+  verifyToken("seller"),
+  async (ctx) => {
+    const productId = ctx.params.id;
 
-  const schema = Joi.object({
-    name: Joi.string().min(3).max(100),
-    description: Joi.string().min(3).max(254),
-    price: Joi.number().min(1),
-    marketplaces: Joi.array().min(1).items({
-      name: Joi.string().required(),
-      url: Joi.string().uri().required(),
-    }),
-  });
+    const schema = Joi.object({
+      name: Joi.string().min(3).max(100),
+      description: Joi.string().min(3).max(254),
+      price: Joi.number().min(1),
+      marketplaces: Joi.array().min(1).items({
+        name: Joi.string().required(),
+        url: Joi.string().uri().required(),
+      }),
+      productImage1: Joi.any(),
+    });
 
-  const body = await schema.validateAsync(ctx.request.body);
-  const { name, description, price, marketplaces } = body;
+    const body = await schema.validateAsync(ctx.request.body);
 
-  const documentRef = db.products.doc(productId);
-  const document = await documentRef.get();
+    const { productImage1, productImage2 } = ctx.request.files;
+    const imageUrls: string[] = [];
+    const images = [];
 
-  if (!document.exists) throw new NotFoundError();
+    if (productImage1) images.push(productImage1);
+    if (productImage2) images.push(productImage2);
 
-  const existingProduct = document.data() as Product;
-  if (existingProduct.ownerId !== ctx.state.uid) throw new ForbiddenError();
+    images.forEach(async (file) => {
+      const { extension, mimeType, buffer } = file;
+      const url = await upload(
+        "products",
+        "random",
+        extension,
+        mimeType,
+        buffer,
+        true
+      );
 
-  const updatedProduct = { ...existingProduct };
+      imageUrls.push(url);
+    });
 
-  if (name) updatedProduct.name = name;
-  if (description) updatedProduct.description = description;
-  if (price) updatedProduct.price = price;
-  if (marketplaces) updatedProduct.marketplaces = marketplaces;
+    const { name, description, price, marketplaces } = body;
 
-  await db.products.doc(productId).update(updatedProduct);
+    const documentRef = db.products.doc(productId);
+    const document = await documentRef.get();
 
-  ctx.ok(updatedProduct);
-});
+    if (!document.exists) throw new NotFoundError();
 
-router.delete("/:id", verifyToken(["bank", "seller"]), async (ctx) => {
+    const existingProduct = document.data() as Product;
+    if (existingProduct.ownerId !== ctx.state.uid) throw new ForbiddenError();
+
+    const updatedProduct = { ...existingProduct };
+
+    if (name) updatedProduct.name = name;
+    if (description) updatedProduct.description = description;
+    if (price) updatedProduct.price = price;
+    if (marketplaces) updatedProduct.marketplaces = marketplaces;
+
+    await db.products.doc(productId).update(updatedProduct);
+
+    ctx.ok(updatedProduct);
+  }
+);
+
+router.delete("/:id", verifyToken("seller"), async (ctx) => {
   const productId = ctx.params.id;
 
   const documentRef = db.products.doc(productId);
