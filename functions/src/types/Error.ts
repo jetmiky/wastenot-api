@@ -43,3 +43,7 @@ export class ForbiddenError extends ErrorResponse {
 export class NotFoundError extends ErrorResponse {
   public message = "Not Found!";
 }
+
+export class NotImplemented extends ErrorResponse {
+  public message = "Service is not implemented";
+}

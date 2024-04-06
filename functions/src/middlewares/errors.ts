@@ -49,6 +49,8 @@ export default function handleErrors(): Middleware {
         ctx.forbidden(response);
       } else if (error instanceof Errors.NotFoundError) {
         ctx.notFound(response);
+      } else if (error instanceof Errors.NotImplemented) {
+        ctx.notImplemented(response);
       } else {
         logger.error(response);
         console.log(error);
