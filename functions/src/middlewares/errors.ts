@@ -51,6 +51,7 @@ export default function handleErrors(): Middleware {
         ctx.notFound(response);
       } else {
         logger.error(response);
+        console.log(error);
         ctx.internalServerError(response);
       }
     }

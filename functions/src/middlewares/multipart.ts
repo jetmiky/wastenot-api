@@ -5,6 +5,8 @@ import path = require("path");
 import { Middleware, Context, Next } from "koa";
 import { IncomingMessage } from "http";
 
+import { isValidJSON } from "../utils/formats";
+
 type File = {
   fieldName: string;
   originalName: string;
@@ -16,7 +18,7 @@ type File = {
 };
 
 type ExtractResponse = {
-  fields: { [key: string]: string };
+  fields: { [key: string]: string | object | [] };
   files: { [key: string]: File };
 };
 
@@ -82,7 +84,11 @@ function extract(
     const tmpdir = os.tmpdir();
 
     bb.on("field", (key, value) => {
-      fields[key] = value;
+      if (isValidJSON(value)) {
+        fields[key] = JSON.parse(value);
+      } else {
+        fields[key] = value;
+      }
     });
 
     bb.on("file", (fieldName, stream, metadata) => {
