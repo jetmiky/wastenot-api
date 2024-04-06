@@ -9,16 +9,21 @@ import { GeoPoint } from "firebase-admin/firestore";
 import verifyToken from "../middlewares/tokens";
 import db from "../utils/db";
 
-import { NotFoundError } from "../types/Error";
+import { NotFoundError, NotImplemented } from "../types/Error";
 import Bank from "../types/Bank";
 import { phoneNumberPattern } from "../utils/patterns";
+
+type BankResponse = Bank & {
+  email: string | undefined;
+  phoneNumber: string | undefined;
+};
 
 const router = new Router();
 
 router.get("/", verifyToken(["user", "admin"]), async (ctx) => {
   const search = ctx.query.search;
 
-  const banks: Bank[] = [];
+  const banks: BankResponse[] = [];
   const documentsRef = search ?
     db.banks
       .orderBy("name")
@@ -26,11 +31,12 @@ router.get("/", verifyToken(["user", "admin"]), async (ctx) => {
       .endAt(search + "~") :
     db.banks;
 
-  const documents = await documentsRef.limit(6).get();
+  const snapshot = await documentsRef.limit(6).get();
 
-  documents.forEach((document) => {
-    banks.push({ ...document.data(), id: document.id });
-  });
+  for (const document of snapshot.docs) {
+    const { email, phoneNumber } = await admin.auth().getUser(document.id);
+    banks.push({ ...document.data(), id: document.id, email, phoneNumber });
+  }
 
   ctx.ok(banks);
 });
@@ -41,8 +47,10 @@ router.get("/:id", verifyToken(["user", "admin"]), async (ctx) => {
 
   if (!document.exists) throw new NotFoundError();
 
-  const bank = document.data();
-  ctx.ok({ ...bank, id: document.id });
+  const bank = document.data() as Bank;
+  const { email, phoneNumber } = await admin.auth().getUser(document.id);
+
+  ctx.ok({ ...bank, id: document.id, email, phoneNumber });
 });
 
 router.post("/", verifyToken("admin"), async (ctx) => {
@@ -67,7 +75,7 @@ router.post("/", verifyToken("admin"), async (ctx) => {
     geoPoint: Joi.object({
       latitude: Joi.number().min(-90).max(90).default(0),
       longitude: Joi.number().min(-180).max(180).default(0),
-    }),
+    }).default({ latitude: 0, longitude: 0 }),
   });
 
   const body = await schema.validateAsync(ctx.request.body);
@@ -167,6 +175,8 @@ router.put("/:id", verifyToken("admin"), async (ctx) => {
 });
 
 router.delete("/:id", verifyToken("admin"), async (ctx) => {
+  throw new NotImplemented();
+
   const bankId = ctx.params.id;
 
   const documentRef = db.banks.doc(bankId);
