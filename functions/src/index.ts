@@ -16,6 +16,7 @@ admin.initializeApp({
 
 import auth from "./routes/auth";
 import banks from "./routes/banks";
+import sellers from "./routes/sellers";
 import pickup from "./routes/pickups";
 import deliver from "./routes/delivers";
 import products from "./routes/products";
@@ -27,6 +28,7 @@ const router = new Router();
 
 router.use("/auth", auth.routes());
 router.use("/banks", banks.routes());
+router.use("/sellers", sellers.routes());
 router.use("/pickups", pickup.routes());
 router.use("/delivers", deliver.routes());
 router.use("/products", products.routes());
