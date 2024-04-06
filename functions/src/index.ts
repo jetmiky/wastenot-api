@@ -9,14 +9,10 @@ import { bodyParser } from "@koa/bodyparser";
 import handleErrors from "./middlewares/errors";
 import Router = require("@koa/router");
 
-if (process.env.FUNCTIONS_EMULATOR === "true") {
-  admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-    storageBucket: "wastenot-c13cd.appspot.com",
-  });
-} else {
-  admin.initializeApp(functions.config().firebase);
-}
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+  storageBucket: "wastenot-c13cd.appspot.com",
+});
 
 import auth from "./routes/auth";
 import pickup from "./routes/pickups";
