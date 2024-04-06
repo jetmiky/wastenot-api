@@ -116,7 +116,7 @@ router.post("/", verifyToken("user"), multipart("wasteImage"), async (ctx) => {
     wasteImage: Joi.any(),
   });
 
-  const body = await schema.validateAsync(ctx.req.body);
+  const body = await schema.validateAsync(ctx.request.body);
   const { bankId, senderName, senderPhone, sendSchedule } = body;
 
   const { extension, mimeType, buffer } = ctx.request.files.wasteImage;

@@ -16,7 +16,7 @@ import { phoneNumberPattern } from "../utils/patterns";
 const router = new Router();
 
 type PickupOrderResponse = PickupOrder & {
-  bank: Bank;
+  bank: Bank | null;
   wasteImageUrl: string;
   createdTime: string;
   updatedTime: string;
@@ -44,13 +44,16 @@ router.get("/", verifyToken("user"), async (ctx) => {
   const documents = await query.get();
 
   for (const document of documents.docs) {
+    let bank: Bank | null = null;
     const order = document.data();
 
     const createdTime = order.createdAt.toDate().toISOString();
     const updatedTime = order.createdAt.toDate().toISOString();
 
-    const bankSnapshot = await db.banks.doc(order.bankId).get();
-    const bank = bankSnapshot.data() as Bank;
+    if (order.bankId) {
+      const bankSnapshot = await db.banks.doc(order.bankId).get();
+      bank = bankSnapshot.data() as Bank;
+    }
 
     const wasteImageUrl = await getSignedUrl(order.wasteImagePath);
 
@@ -76,8 +79,11 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   const order = document.data() as PickupOrder;
   if (order?.userId !== ctx.state.uid) throw new ForbiddenError();
 
-  const bankSnapshot = await db.banks.doc(order.bankId).get();
-  const bank = bankSnapshot.data() as Bank;
+  let bank: Bank | null = null;
+  if (order.bankId) {
+    const bankSnapshot = await db.banks.doc(order.bankId).get();
+    bank = bankSnapshot.data() as Bank;
+  }
 
   const wasteImageUrl = await getSignedUrl(order.wasteImagePath);
 
@@ -109,7 +115,7 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
 
 router.post("/", verifyToken("user"), multipart("wasteImage"), async (ctx) => {
   const schema = Joi.object({
-    bankId: Joi.string().required(),
+    bankId: Joi.string().allow(null, ""),
     requesterName: Joi.string().min(3).max(100).required(),
     requesterPhone: Joi.string().pattern(phoneNumberPattern).required(),
     requesterAddress: Joi.string().max(254).required(),
@@ -121,7 +127,7 @@ router.post("/", verifyToken("user"), multipart("wasteImage"), async (ctx) => {
     wasteImage: Joi.any(),
   });
 
-  const body = await schema.validateAsync(ctx.req.body);
+  const body = await schema.validateAsync(ctx.request.body);
   const {
     bankId,
     requesterName,
