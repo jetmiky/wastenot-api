@@ -55,7 +55,7 @@ router.get("/seller", verifyToken("seller"), async (ctx) => {
   ctx.ok(products);
 });
 
-router.get("/:id", verifyToken("user"), async (ctx) => {
+router.get("/:id", verifyToken(["user", "seller"]), async (ctx) => {
   const id = ctx.params.id;
   const document = await db.products.doc(id).get();
 
