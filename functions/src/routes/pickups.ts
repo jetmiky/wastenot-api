@@ -100,7 +100,9 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   if (order.realizedPickupTime) {
     response.updatedTime = order.realizedPickupTime.toDate().toISOString();
   } else {
-    response.updatedTime = order.createdAt.toDate().toISOString();
+    response.updatedTime = order.requester.pickupSchedule
+      .toDate()
+      .toISOString();
   }
 
   for (const waste of order.wastes) {

@@ -16,8 +16,9 @@ import { phoneNumberPattern } from "../utils/patterns";
 const router = new Router();
 
 type DeliverOrderResponse = DeliverOrder & {
-  bank: Bank;
+  bank?: Bank;
   wasteImageUrl: string;
+  sendScheduleTime?: string;
   createdTime: string;
   updatedTime: string;
   wastesUpdate?: (Waste & { wasteName: string })[];
@@ -67,6 +68,42 @@ router.get("/", verifyToken("user"), async (ctx) => {
   ctx.ok(orders);
 });
 
+router.get("/bank", verifyToken("bank"), async (ctx) => {
+  const status = ctx.query.status as DeliverStatus;
+  const orders: DeliverOrderResponse[] = [];
+
+  let query = db.deliverOrders.where("bankId", "==", ctx.state.uid);
+
+  if (status) {
+    query = query.where("status", "==", status);
+  }
+
+  query = query.orderBy("createdAt");
+
+  const documents = await query.get();
+
+  for (const document of documents.docs) {
+    const order = document.data();
+
+    const createdTime = order.createdAt.toDate().toISOString();
+    const updatedTime = order.createdAt.toDate().toISOString();
+    const sendScheduleTime = order.sendSchedule.toDate().toISOString();
+
+    const wasteImageUrl = await getSignedUrl(order.wasteImagePath);
+
+    orders.push({
+      ...order,
+      id: document.id,
+      wasteImageUrl,
+      sendScheduleTime,
+      createdTime,
+      updatedTime,
+    });
+  }
+
+  ctx.ok(orders);
+});
+
 router.get("/:id", verifyToken("user"), async (ctx) => {
   const id = ctx.params.id;
   const document = await db.deliverOrders.doc(id).get();
@@ -94,7 +131,7 @@ router.get("/:id", verifyToken("user"), async (ctx) => {
   if (order.status === "Selesai") {
     response.updatedTime = order.updatedAt.toDate().toISOString();
   } else {
-    response.updatedTime = order.createdAt.toDate().toISOString();
+    response.updatedTime = order.sendSchedule.toDate().toISOString();
   }
 
   for (const waste of order.wastes) {
@@ -191,18 +228,22 @@ router.put(
         status: Joi.string()
           .valid("Menunggu penimbangan", "Selesai")
           .required(),
-        wastes: Joi.when("status", {
-          is: Joi.string().equal("Selesai"),
-          then: Joi.array().required().items({
-            wasteId: Joi.string().required(),
-            wasteWeight: Joi.number().required(),
-          }),
-          otherwise: Joi.any(),
-        }),
-        wasteImage: Joi.any(),
+        wasteWeight: Joi.number().min(1).required(),
+        // wastes: Joi.when("status", {
+        // is: Joi.string().equal("Selesai"),
+        // then: Joi.array().required().items({
+        //   wasteId: Joi.string().required(),
+        //   wasteWeight: Joi.number().required(),
+        // }),
+        //   then: Joi.
+        //   otherwise: Joi.any(),
+        // }),
+        // wasteImage: Joi.any(),
       });
 
-      const { status, wastes } = await schema.validateAsync(ctx.request.body);
+      const { status, wasteWeight } = await schema.validateAsync(
+        ctx.request.body
+      );
       updatedOrder.status = status;
 
       if (status === "Menunggu penimbangan") {
@@ -212,27 +253,39 @@ router.put(
         });
       } else if (status === "Selesai") {
         let totalPoint = 0;
-        wastes.forEach(async (waste: Waste) => {
-          const doc = await db.wastes.doc(waste.wasteId).get();
-          const data = doc.data()?.point ?? 0;
-          const point = data * waste.wasteWeight;
+        const wastes: Waste[] = [];
 
-          waste.wastePoint = point;
+        const randomWaste = await db.wastes.where("point", "==", 1).get();
+        for (const waste of randomWaste.docs) {
+          const data = waste.data()?.point ?? 0;
+          const point = data * wasteWeight;
+
           totalPoint += point;
-        });
+
+          wastes.push({ wasteId: waste.id, wastePoint: point, wasteWeight });
+        }
+
+        // wastes.forEach(async (waste: Waste) => {
+        //   const doc = await db.wastes.doc(waste.wasteId).get();
+        //   const data = doc.data()?.point ?? 0;
+        //   const point = data * waste.wasteWeight;
+
+        //   waste.wastePoint = point;
+        //   totalPoint += point;
+        // });
 
         updatedOrder.wastes = wastes;
 
-        const { extension, mimeType, buffer } = ctx.request.files.wasteImage;
-        const path = await upload(
-          "delivers",
-          "random",
-          extension,
-          mimeType,
-          buffer
-        );
+        // const { extension, mimeType, buffer } = ctx.request.files.wasteImage;
+        // const path = await upload(
+        //   "delivers",
+        //   "random",
+        //   extension,
+        //   mimeType,
+        //   buffer
+        // );
 
-        updatedOrder.wasteImagePath = path;
+        // updatedOrder.wasteImagePath = path;
 
         await db.firestore.runTransaction(async () => {
           await db.users.doc(existingOrder.userId).update({
