@@ -78,7 +78,7 @@ router.put("/:id", verifyToken("admin"), async (ctx) => {
     name: Joi.string().min(3).max(100),
     email: Joi.string().email(),
     phoneNumber: Joi.string().pattern(phoneNumberPattern),
-    address: Joi.string().valid("Laki Laki", "Perempuan"),
+    address: Joi.string(),
   });
 
   const body = await schema.validateAsync(ctx.req.body);
