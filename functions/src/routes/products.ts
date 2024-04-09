@@ -82,7 +82,7 @@ router.post(
         .min(1)
         .items({
           name: Joi.string().valid("Tokopedia", "Lazada", "Shopee").required(),
-          url: Joi.string().uri().required(),
+          url: Joi.string().required(),
         })
         .required(),
       productImage1: Joi.any(),
@@ -96,7 +96,7 @@ router.post(
     if (productImage1) images.push(productImage1);
     if (productImage2) images.push(productImage2);
 
-    images.forEach(async (file) => {
+    for (const file of images) {
       const { extension, mimeType, buffer } = file;
       const url = await upload(
         "products",
@@ -108,7 +108,7 @@ router.post(
       );
 
       imageUrls.push(url);
-    });
+    }
 
     const body = await schema.validateAsync(ctx.request.body);
     const { name, description, price, marketplaces } = body;
@@ -140,7 +140,7 @@ router.put(
       price: Joi.number().min(1),
       marketplaces: Joi.array().min(1).items({
         name: Joi.string().required(),
-        url: Joi.string().uri().required(),
+        url: Joi.string().required(),
       }),
       productImage1: Joi.any(),
     });
@@ -154,7 +154,7 @@ router.put(
     if (productImage1) images.push(productImage1);
     if (productImage2) images.push(productImage2);
 
-    images.forEach(async (file) => {
+    for (const file of images) {
       const { extension, mimeType, buffer } = file;
       const url = await upload(
         "products",
@@ -166,7 +166,7 @@ router.put(
       );
 
       imageUrls.push(url);
-    });
+    }
 
     const { name, description, price, marketplaces } = body;
 
