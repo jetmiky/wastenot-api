@@ -9,16 +9,22 @@ import verifyToken from "../middlewares/tokens";
 import { NotFoundError } from "../types/Error";
 import Seller from "../types/Seller";
 
+type SellerResponse = Seller & {
+  email: string | undefined;
+  phoneNumber: string | undefined;
+};
+
 const router = new Router();
 
 router.get("/", verifyToken("admin"), async (ctx) => {
-  const sellers: Seller[] = [];
+  const sellers: SellerResponse[] = [];
 
-  const documents = await db.sellers.get();
+  const snapshot = await db.sellers.get();
 
-  documents.forEach((document) => {
-    sellers.push({ ...document.data(), id: document.id });
-  });
+  for (const document of snapshot.docs) {
+    const { email, phoneNumber } = await admin.auth().getUser(document.id);
+    sellers.push({ ...document.data(), id: document.id, email, phoneNumber });
+  }
 
   ctx.ok(sellers);
 });
@@ -30,7 +36,9 @@ router.get("/:id", verifyToken("admin"), async (ctx) => {
   if (!document.exists) throw new NotFoundError();
 
   const seller = document.data();
-  ctx.ok({ ...seller, id: document.id });
+  const { email, phoneNumber } = await admin.auth().getUser(document.id);
+
+  ctx.ok({ ...seller, id: document.id, email, phoneNumber });
 });
 
 router.post("/", verifyToken("admin"), async (ctx) => {
@@ -63,9 +71,10 @@ router.post("/", verifyToken("admin"), async (ctx) => {
   ctx.created({ sellerId: uid, email });
 });
 
-router.put("/", verifyToken("admin"), async (ctx) => {
+router.put("/:id", verifyToken("admin"), async (ctx) => {
+  const sellerId = ctx.params.id;
+
   const schema = Joi.object({
-    sellerId: Joi.string().required(),
     name: Joi.string().min(3).max(100),
     email: Joi.string().email(),
     phoneNumber: Joi.string().pattern(phoneNumberPattern),
@@ -73,7 +82,7 @@ router.put("/", verifyToken("admin"), async (ctx) => {
   });
 
   const body = await schema.validateAsync(ctx.req.body);
-  const { sellerId, name, email, phoneNumber, address } = body;
+  const { name, email, phoneNumber, address } = body;
   const updatedSeller: { [key: string]: string } = {};
 
   if (name) updatedSeller.displayName = name;
