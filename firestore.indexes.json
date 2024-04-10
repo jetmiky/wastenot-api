@@ -27,6 +27,34 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "deliverOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "bankId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "pickupOrders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "bankId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "createdAt",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
