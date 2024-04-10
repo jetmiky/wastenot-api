@@ -266,22 +266,23 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
       status: Joi.string()
         .valid("Proses diambil", "Menunggu penimbangan", "Selesai")
         .required(),
-      wastes: Joi.when("status", {
-        is: Joi.string().equal("Selesai"),
-        then: Joi.array().required().items({
-          wasteId: Joi.string().required(),
-          wasteWeight: Joi.number().required(),
-        }),
-        otherwise: Joi.any(),
-      }),
-      realizedPickupTime: Joi.when("status", {
-        is: Joi.string().equal("Selesai"),
-        then: Joi.date().iso().required(),
-        otherwise: Joi.any(),
-      }),
+      wasteWeight: Joi.number().min(1).required(),
+      // wastes: Joi.when("status", {
+      //   is: Joi.string().equal("Selesai"),
+      //   then: Joi.array().required().items({
+      //     wasteId: Joi.string().required(),
+      //     wasteWeight: Joi.number().required(),
+      //   }),
+      //   otherwise: Joi.any(),
+      // }),
+      // realizedPickupTime: Joi.when("status", {
+      //   is: Joi.string().equal("Selesai"),
+      //   then: Joi.date().iso().required(),
+      //   otherwise: Joi.any(),
+      // }),
     });
 
-    const { status, wastes, realizedPickupTime } = await schema.validateAsync(
+    const { status, wasteWeight } = await schema.validateAsync(
       ctx.request.body
     );
     updatedOrder.status = status;
@@ -293,18 +294,30 @@ router.put("/:id", verifyToken(["bank", "user"]), async (ctx) => {
       });
     } else if (status === "Selesai") {
       let totalPoint = 0;
-      wastes.forEach(async (waste: Waste) => {
-        const doc = await db.wastes.doc(waste.wasteId).get();
-        const data = doc.data()?.point ?? 0;
-        const point = data * waste.wasteWeight;
+      const wastes: Waste[] = [];
 
-        waste.wastePoint = point;
+      const randomWaste = await db.wastes.where("point", "==", 1).get();
+      for (const waste of randomWaste.docs) {
+        const data = waste.data()?.point ?? 0;
+        const point = data * wasteWeight;
+
         totalPoint += point;
-      });
+
+        wastes.push({ wasteId: waste.id, wastePoint: point, wasteWeight });
+      }
+
+      // wastes.forEach(async (waste: Waste) => {
+      //   const doc = await db.wastes.doc(waste.wasteId).get();
+      //   const data = doc.data()?.point ?? 0;
+      //   const point = data * waste.wasteWeight;
+
+      //   waste.wastePoint = point;
+      //   totalPoint += point;
+      // });
 
       updatedOrder.wastes = wastes;
-      updatedOrder.realizedPickupTime =
-        timestampFromISODateString(realizedPickupTime);
+      // updatedOrder.realizedPickupTime =
+      //   timestampFromISODateString(realizedPickupTime);
 
       await db.firestore.runTransaction(async () => {
         await db.users.doc(existingOrder.userId).update({
