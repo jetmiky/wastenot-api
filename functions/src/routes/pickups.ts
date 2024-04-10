@@ -16,8 +16,9 @@ import { phoneNumberPattern } from "../utils/patterns";
 const router = new Router();
 
 type PickupOrderResponse = PickupOrder & {
-  bank: Bank | null;
+  bank?: Bank | null;
   wasteImageUrl: string;
+  pickupScheduleTime?: string;
   createdTime: string;
   updatedTime: string;
   wastesUpdate?: (Waste & { wasteName: string })[];
@@ -62,6 +63,42 @@ router.get("/", verifyToken("user"), async (ctx) => {
       id: document.id,
       bank,
       wasteImageUrl,
+      createdTime,
+      updatedTime,
+    });
+  }
+
+  ctx.ok(orders);
+});
+
+router.get("/bank", verifyToken("bank"), async (ctx) => {
+  const status = ctx.query.status as PickupStatus;
+  const orders: PickupOrderResponse[] = [];
+
+  let query = db.pickupOrders.where("bankId", "==", ctx.state.uid);
+
+  if (status) {
+    query = query.where("status", "==", status);
+  }
+
+  query = query.orderBy("createdAt");
+
+  const documents = await query.get();
+
+  for (const document of documents.docs) {
+    const order = document.data();
+
+    const createdTime = order.createdAt.toDate().toISOString();
+    const updatedTime = order.createdAt.toDate().toISOString();
+    const schedule = order.requester.pickupSchedule.toDate().toISOString();
+
+    const wasteImageUrl = await getSignedUrl(order.wasteImagePath);
+
+    orders.push({
+      ...order,
+      id: document.id,
+      wasteImageUrl,
+      pickupScheduleTime: schedule,
       createdTime,
       updatedTime,
     });
