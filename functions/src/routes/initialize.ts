@@ -3,7 +3,7 @@ import admin = require("firebase-admin");
 import Joi = require("joi");
 
 import { logger } from "firebase-functions/v1";
-import db from "../utils/db";
+import db, { monitorUserLevel } from "../utils/db";
 import { UnauthorizedError } from "../types/Error";
 
 import levelsData from "../data/levels";
@@ -212,7 +212,7 @@ async function initializeMockups(): Promise<void> {
         if (pickupOrder.status === "Selesai") {
           const DEFAULT_WASTE_POINT = 1;
 
-          const wasteWeight = getRandomInteger(2, 10);
+          const wasteWeight = getRandomInteger(8, 14);
           const wastePoint = wasteWeight * DEFAULT_WASTE_POINT;
           let wasteId = "";
 
@@ -224,6 +224,7 @@ async function initializeMockups(): Promise<void> {
           }
 
           pickupOrder.wastes.push({ wasteId, wastePoint, wasteWeight });
+          await monitorUserLevel(uid, wastePoint, wasteWeight);
         }
 
         pickupOrder.userId = uid;
@@ -245,7 +246,7 @@ async function initializeMockups(): Promise<void> {
         if (deliverOrder.status === "Selesai") {
           const DEFAULT_WASTE_POINT = 1;
 
-          const wasteWeight = getRandomInteger(2, 10);
+          const wasteWeight = getRandomInteger(8, 14);
           const wastePoint = wasteWeight * DEFAULT_WASTE_POINT;
           let wasteId = "";
 
@@ -257,6 +258,7 @@ async function initializeMockups(): Promise<void> {
           }
 
           deliverOrder.wastes.push({ wasteId, wastePoint, wasteWeight });
+          await monitorUserLevel(uid, wastePoint, wasteWeight);
         }
 
         deliverOrder.userId = uid;

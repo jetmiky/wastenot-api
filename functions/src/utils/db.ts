@@ -4,6 +4,7 @@ import {
   CollectionReference,
   DocumentData,
   PartialWithFieldValue,
+  FieldValue,
 } from "firebase-admin/firestore";
 
 import Level from "../types/Level";
@@ -46,5 +47,48 @@ const db = {
   deliverOrders: getCollection<DeliverOrder>("deliverOrders"),
   pickupOrders: getCollection<PickupOrder>("pickupOrders"),
 };
+
+/**
+ * Add user point, level up user if necessary.
+ *
+ * @param {string} uid User ID.
+ * @param {number} points Points to be added.
+ * @param {number} wastesCollected Wastes collected in number.
+ * @return {Promise<void>}
+ */
+export async function monitorUserLevel(
+  uid: string,
+  points: number,
+  wastesCollected: number
+): Promise<void> {
+  const userSnapshot = await db.users.doc(uid).get();
+  const user = userSnapshot.data() as User;
+
+  let levelId = user.levelId;
+
+  const levelSnapshot = await db.levels.doc(levelId).get();
+  const level = levelSnapshot.data() as Level;
+
+  const updatedPoints = user.totalPoints + points;
+
+  if (updatedPoints >= level.nextLevelPoint) {
+    const trueLevelSnapshot = await db.levels
+      .where("requiredPoint", "<=", updatedPoints)
+      .where("nextLevelPoint", ">", updatedPoints)
+      .limit(1)
+      .get();
+
+    const trueLevelId = trueLevelSnapshot.docs[0].id;
+
+    levelId = trueLevelId;
+  }
+
+  // Add point to user
+  await db.users.doc(uid).update({
+    levelId,
+    totalPoints: FieldValue.increment(points),
+    wasteCollected: FieldValue.increment(wastesCollected),
+  });
+}
 
 export default db;
