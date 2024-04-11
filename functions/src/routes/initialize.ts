@@ -209,22 +209,25 @@ async function initializeMockups(): Promise<void> {
 
         const bankId = getRandomItem(bankIds);
 
-        const DEFAULT_WASTE_POINT = 1;
+        if (pickupOrder.status === "Selesai") {
+          const DEFAULT_WASTE_POINT = 1;
 
-        const wasteWeight = getRandomInteger(2, 10);
-        const wastePoint = wasteWeight * DEFAULT_WASTE_POINT;
-        let wasteId = "";
+          const wasteWeight = getRandomInteger(2, 10);
+          const wastePoint = wasteWeight * DEFAULT_WASTE_POINT;
+          let wasteId = "";
 
-        const wastesSnapshot = await db.wastes
-          .where("point", "==", DEFAULT_WASTE_POINT)
-          .get();
-        for (const document of wastesSnapshot.docs) {
-          wasteId = document.id;
+          const wastesSnapshot = await db.wastes
+            .where("point", "==", DEFAULT_WASTE_POINT)
+            .get();
+          for (const document of wastesSnapshot.docs) {
+            wasteId = document.id;
+          }
+
+          pickupOrder.wastes.push({ wasteId, wastePoint, wasteWeight });
         }
 
         pickupOrder.userId = uid;
         pickupOrder.bankId = bankId;
-        pickupOrder.wastes.push({ wasteId, wastePoint, wasteWeight });
 
         await db.pickupOrders.add(pickupOrder);
       }
@@ -239,22 +242,25 @@ async function initializeMockups(): Promise<void> {
 
         const bankId = getRandomItem(bankIds);
 
-        const DEFAULT_WASTE_POINT = 1;
+        if (deliverOrder.status === "Selesai") {
+          const DEFAULT_WASTE_POINT = 1;
 
-        const wasteWeight = getRandomInteger(2, 10);
-        const wastePoint = wasteWeight * DEFAULT_WASTE_POINT;
-        let wasteId = "";
+          const wasteWeight = getRandomInteger(2, 10);
+          const wastePoint = wasteWeight * DEFAULT_WASTE_POINT;
+          let wasteId = "";
 
-        const wastesSnapshot = await db.wastes
-          .where("point", "==", DEFAULT_WASTE_POINT)
-          .get();
-        for (const document of wastesSnapshot.docs) {
-          wasteId = document.id;
+          const wastesSnapshot = await db.wastes
+            .where("point", "==", DEFAULT_WASTE_POINT)
+            .get();
+          for (const document of wastesSnapshot.docs) {
+            wasteId = document.id;
+          }
+
+          deliverOrder.wastes.push({ wasteId, wastePoint, wasteWeight });
         }
 
         deliverOrder.userId = uid;
         deliverOrder.bankId = bankId;
-        deliverOrder.wastes.push({ wasteId, wastePoint, wasteWeight });
 
         await db.deliverOrders.add(deliverOrder);
       }
