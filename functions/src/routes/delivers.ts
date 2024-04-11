@@ -10,6 +10,8 @@ import { FieldValue } from "firebase-admin/firestore";
 import { BadRequestError, ForbiddenError, NotFoundError } from "../types/Error";
 import DeliverOrder, { DeliverStatus, Waste } from "../types/DeliverOrder";
 import Bank from "../types/Bank";
+import User from "../types/User";
+import Level from "../types/Level";
 import { timestampFromISODateString } from "../utils/formats";
 import { phoneNumberPattern } from "../utils/patterns";
 
@@ -288,7 +290,23 @@ router.put(
         // updatedOrder.wasteImagePath = path;
 
         await db.firestore.runTransaction(async () => {
+          const userSnapshot = await db.users.doc(existingOrder.userId).get();
+          const user = userSnapshot.data() as User;
+
+          let levelId = user.levelId;
+
+          const levelSnapshot = await db.levels.doc(user.levelId).get();
+          const level = levelSnapshot.data() as Level;
+
+          if (user.totalPoints + totalPoint >= level.nextLevelPoint) {
+            const nextLevelSnapshot = await db.levels
+              .where("requiredPoint", "==", level.nextLevelPoint)
+              .get();
+            levelId = nextLevelSnapshot.docs[0].id;
+          }
+
           await db.users.doc(existingOrder.userId).update({
+            levelId,
             totalPoints: FieldValue.increment(totalPoint),
           });
 
