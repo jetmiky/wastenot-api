@@ -75,7 +75,8 @@ export async function monitorUserLevel(
     const trueLevelSnapshot = await db.levels
       .where("requiredPoint", "<=", updatedPoints)
       .where("nextLevelPoint", ">", updatedPoints)
-      .limit(1)
+      .orderBy("requiredPoint")
+      .orderBy("nextLevelPoint")
       .get();
 
     const trueLevelId = trueLevelSnapshot.docs[0].id;

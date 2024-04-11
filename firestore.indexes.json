@@ -55,6 +55,20 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "levels",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "requiredPoint",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "nextLevelPoint",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
